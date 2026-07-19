@@ -25,36 +25,17 @@ export function UploadPage() {
     queryFn: () => getEntries(),
   });
 
-  const [pending, setPending] = useState<PendingEntry[]>([
-    {
-      id: "mock-processing",
-      previewUrl: "https://placehold.co/64x64/FFF3E0/FF9800?text=🍼",
-      status: "processing",
-    },
-    {
-      id: "mock-done",
-      previewUrl: "https://placehold.co/64x64/E8F5E9/4CAF50?text=✅",
-      status: "done",
-      result: {
-        date: "15-Jul-26",
-        time: "19:30",
-        amount_ml: 80,
-        packets: 2,
-        notes: "First pump of the day",
-      },
-    },
-    {
-      id: "mock-error",
-      previewUrl: "https://placehold.co/64x64/FFEBEE/F44336?text=❌",
-      status: "error",
-      error: "AI model timed out — please try again",
-    },
-  ]);
+  const [pending, setPending] = useState<PendingEntry[]>([]);
   // Keeps the original File for each entry so a failed upload can be resubmitted.
   const filesRef = useRef<Map<string, File>>(new Map());
   const uploadMilkFn = useServerFn(uploadMilk);
 
   function handleFile(file: File) {
+    console.log("[client] file selected:", {
+      name: file.name,
+      type: file.type,
+      size: `${(file.size / 1024).toFixed(1)} KB`,
+    });
     const id = crypto.randomUUID();
     filesRef.current.set(id, file);
     const previewUrl = URL.createObjectURL(file);
@@ -79,8 +60,10 @@ export function UploadPage() {
   async function runUpload(id: string, file: File) {
     const form = new FormData();
     form.append("image", file);
+    console.log("[client] starting upload, id:", id);
     try {
       const { result } = await uploadMilkFn({ data: form });
+      console.log("[client] upload done, id:", id, "result:", result);
       setPending((prev) =>
         prev.map((e) => (e.id === id ? { ...e, status: "done", result } : e)),
       );
@@ -88,6 +71,7 @@ export function UploadPage() {
       void queryClient.invalidateQueries({ queryKey: ["entries"] });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
+      console.error("[client] upload failed, id:", id, "error:", err);
       setPending((prev) =>
         prev.map((e) =>
           e.id === id ? { ...e, status: "error", error: msg } : e,

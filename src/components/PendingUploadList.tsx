@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { MilkPacketResult } from "@/lib/ai";
-import { RotateCcw } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
 
 export interface PendingEntry {
   id: string;
@@ -10,21 +11,39 @@ export interface PendingEntry {
   error?: string;
 }
 
-const STATUS_ICON: Record<PendingEntry["status"], string> = {
-  processing: "🔍",
-  done: "✅",
-  error: "❌",
-};
-
-const STATUS_LABEL: Record<PendingEntry["status"], string> = {
-  processing: "Reading label...",
-  done: "Done",
-  error: "Failed",
-};
-
 interface PendingUploadListProps {
   pending: PendingEntry[];
   onRetry: (id: string) => void;
+}
+
+function Thumbnail({
+  previewUrl,
+  status,
+}: {
+  previewUrl: string;
+  status: PendingEntry["status"];
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImg = previewUrl && !imgFailed;
+
+  return (
+    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+      {showImg && (
+        <img
+          src={previewUrl}
+          alt="Milk packet"
+          className="h-full w-full object-cover"
+          onError={() => setImgFailed(true)}
+        />
+      )}
+      {!showImg && status === "processing" && (
+        <Loader2 className="absolute inset-0 m-auto size-5 animate-spin text-muted-foreground" />
+      )}
+      {!showImg && status === "error" && (
+        <AlertCircle className="absolute inset-0 m-auto size-5 text-destructive/50" />
+      )}
+    </div>
+  );
 }
 
 export function PendingUploadList({ pending, onRetry }: PendingUploadListProps) {
@@ -37,38 +56,49 @@ export function PendingUploadList({ pending, onRetry }: PendingUploadListProps) 
           key={entry.id}
           className={`flex items-center gap-3 rounded-lg border p-3 ${
             entry.status === "done"
-              ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+              ? "border-primary/30 bg-card"
               : entry.status === "error"
-                ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950"
-                : "bg-card"
+                ? "border-destructive/30 bg-destructive/5"
+                : "border-border bg-card"
           }`}
         >
-          <img
-            src={entry.previewUrl}
-            alt="Milk packet"
-            className="h-16 w-16 rounded-md object-cover"
-          />
-          <div className="flex-1">
-            <span className="text-sm font-medium">
-              {STATUS_ICON[entry.status]} {STATUS_LABEL[entry.status]}
-            </span>
+          <Thumbnail previewUrl={entry.previewUrl} status={entry.status} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              {entry.status === "processing" && (
+                <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+              )}
+              {entry.status === "done" && (
+                <CheckCircle2 className="size-3.5 shrink-0 text-primary" />
+              )}
+              {entry.status === "error" && (
+                <AlertCircle className="size-3.5 shrink-0 text-destructive" />
+              )}
+              <span className="truncate text-sm font-medium">
+                {entry.status === "processing" && "Reading label…"}
+                {entry.status === "done" && "Saved"}
+                {entry.status === "error" && "Failed"}
+              </span>
+            </div>
             {entry.status === "done" && entry.result && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Saved {entry.result.amount_ml}ml · {entry.result.date}{" "}
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {entry.result.amount_ml}ml · {entry.result.date}{" "}
                 {entry.result.time}
               </p>
             )}
             {entry.error && (
-              <p className="mt-1 text-xs text-red-600">{entry.error}</p>
+              <p className="mt-1 truncate text-xs text-destructive">
+                {entry.error}
+              </p>
             )}
             {entry.status === "error" && (
               <Button
-                size="sm"
+                size="xs"
                 variant="outline"
                 className="mt-2"
                 onClick={() => onRetry(entry.id)}
               >
-                <RotateCcw /> Resubmit
+                <RotateCcw /> Retry
               </Button>
             )}
           </div>

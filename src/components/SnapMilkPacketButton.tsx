@@ -21,7 +21,6 @@ export function SnapMilkPacketButton({ onFile }: SnapMilkPacketButtonProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileSelect}
       />

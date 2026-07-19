@@ -181,8 +181,8 @@ export function EntryCard({ entry }: EntryCardProps) {
             }}
             className="flex flex-col gap-3 px-4 py-4"
           >
-            <div className="flex gap-2">
-              <label className="flex-1">
+            <div className="flex flex-col gap-2">
+              <label>
                 <span className="mb-1 block text-xs font-medium text-muted-foreground">Date</span>
                 <input
                   type="date"
@@ -191,7 +191,7 @@ export function EntryCard({ entry }: EntryCardProps) {
                   className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
                 />
               </label>
-              <label className="flex-1">
+              <label>
                 <span className="mb-1 block text-xs font-medium text-muted-foreground">Time</span>
                 <input
                   type="time"

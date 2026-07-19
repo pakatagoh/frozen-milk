@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#/*": "./src/*"
+    "#/*": "./src/*",
+    "@/*": "./src/*"
   },
   "scripts": {
     "dev": "vite dev --port 3000",
@@ -55,11 +56,5 @@
     "typescript": "^7.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.5"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
   }
 }

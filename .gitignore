@@ -11,11 +11,14 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
-frozen-milk.db
-frozen-milk.db-wal
-frozen-milk.db-shm
+baby.db
+baby.db-wal
+baby.db-shm
 .cta.json
 .agent-browser
 .vscode/
 IMPLEMENTATION_PLAN.md
 HANDOVER.md
+
+# Local secrets — never commit
+google-token.json

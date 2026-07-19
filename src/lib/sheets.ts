@@ -1,0 +1,128 @@
+import { google } from "googleapis";
+import type { sheets_v4 } from "googleapis";
+import { readFileSync } from "node:fs";
+
+// ─── Abstract storage interface ─────────────────────────────────────────────
+
+export interface MilkSheetEntry {
+  date: string; // "15-Jul-26"
+  time: string; // "19:30"
+  amount: number; // 80
+  packets: number; // 2
+  notes: string; // "" or handwritten note
+  imageUrl: string; // imgproxy URL
+}
+
+export interface MilkStorageBackend {
+  append(entry: MilkSheetEntry): Promise<number>;
+  getLatest(): Promise<MilkSheetEntry | null>;
+}
+
+// ─── Google Sheets implementation ───────────────────────────────────────────
+
+const SHEET_ID = "***REMOVED***";
+const TAB = "***REMOVED***";
+const TOKEN_PATH =
+  process.env.GOOGLE_TOKEN_PATH ||
+  "***REMOVED***";
+
+const HEADER_ROW = 1;
+
+function getSheetsClient(): sheets_v4.Sheets {
+  const tokenData = JSON.parse(readFileSync(TOKEN_PATH, "utf-8"));
+  const auth = new google.auth.OAuth2(
+    tokenData.client_id,
+    tokenData.client_secret,
+    tokenData.redirect_uris?.[0],
+  );
+  auth.setCredentials({
+    access_token: tokenData.token,
+    refresh_token: tokenData.refresh_token,
+  });
+  return google.sheets({ version: "v4", auth });
+}
+
+export class GoogleSheetsBackend implements MilkStorageBackend {
+  async append(entry: MilkSheetEntry): Promise<number> {
+    const sheets = getSheetsClient();
+
+    const colAResult = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${TAB}'!A:A`,
+    });
+
+    const values = colAResult.data.values || [];
+    const lastRow = values.length;
+    const nextRow = lastRow + 1;
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `'${TAB}'!A${nextRow}:G${nextRow}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [
+          [
+            `'${entry.date}`,
+            `'${entry.time}`,
+            entry.amount,
+            entry.packets,
+            "Frozen",
+            entry.notes,
+            entry.imageUrl,
+          ],
+        ],
+      },
+    });
+
+    return nextRow;
+  }
+
+  async getLatest(): Promise<MilkSheetEntry | null> {
+    const sheets = getSheetsClient();
+
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${TAB}'!A${HEADER_ROW + 1}:G`,
+    });
+
+    const rows = result.data.values || [];
+    if (rows.length === 0) return null;
+
+    const lastRow = rows[rows.length - 1];
+    if (!lastRow || lastRow.length < 4) return null;
+
+    const date = String(lastRow[0] || "").replace(/^'/, "");
+    const time = String(lastRow[1] || "").replace(/^'/, "");
+
+    return {
+      date,
+      time,
+      amount: Number(lastRow[2]) || 0,
+      packets: Number(lastRow[3]) || 0,
+      notes: String(lastRow[5] || ""),
+      imageUrl: String(lastRow[6] || ""),
+    };
+  }
+}
+
+// ─── Singleton backend (swap out for testing / future migration) ────────────
+
+let backend: MilkStorageBackend = new GoogleSheetsBackend();
+
+export function setStorageBackend(b: MilkStorageBackend): void {
+  backend = b;
+}
+
+export function getStorageBackend(): MilkStorageBackend {
+  return backend;
+}
+
+// ─── Convenience exports used by the worker ─────────────────────────────────
+
+export async function appendToSheet(entry: MilkSheetEntry): Promise<number> {
+  return backend.append(entry);
+}
+
+export async function getLatestEntry(): Promise<MilkSheetEntry | null> {
+  return backend.getLatest();
+}

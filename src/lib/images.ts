@@ -28,12 +28,14 @@ export async function saveUpload(
   category: "milk" | "general",
 ): Promise<{ storedPath: string; optimizedBase64: string }> {
   const buffer = Buffer.from(await file.arrayBuffer());
+  console.log("[images] saveUpload buffer size:", `${(buffer.length / 1024).toFixed(1)} KB`);
 
   const optimized = await sharp(buffer)
     .rotate()
     .resize(MAX_DIM, MAX_DIM, { fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
     .toBuffer();
+  console.log("[images] sharp optimized size:", `${(optimized.length / 1024).toFixed(1)} KB`);
 
   const id = crypto.randomUUID();
   const datePath = new Date().toISOString().slice(0, 7);
@@ -57,7 +59,7 @@ export function generateImgproxyUrl(
   const resize = height
     ? `rs:fill:${width}:${height}`
     : `rs:fit:${width}:0`;
-  const source = `local:///images/originals/${storedPath}`;
+  const source = `local:///${storedPath}`;
   const unsigned = `/${resize}/plain/${source}`;
 
   const key = getImgproxyKey();

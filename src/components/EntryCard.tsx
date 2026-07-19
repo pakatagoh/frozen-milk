@@ -188,7 +188,7 @@ export function EntryCard({ entry }: EntryCardProps) {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-1.5 text-sm"
+                  className="h-8 w-auto max-w-full rounded-md border border-input bg-transparent px-1.5 text-sm"
                 />
               </label>
               <label className="min-w-0">
@@ -197,7 +197,7 @@ export function EntryCard({ entry }: EntryCardProps) {
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-1.5 text-sm"
+                  className="h-8 w-auto max-w-full rounded-md border border-input bg-transparent px-1.5 text-sm"
                 />
               </label>
             </div>

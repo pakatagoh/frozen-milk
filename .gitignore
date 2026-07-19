@@ -22,3 +22,6 @@ HANDOVER.md
 
 # Local secrets — never commit
 google-token.json
+
+# Local dev data (images, DB)
+data/

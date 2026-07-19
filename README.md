@@ -67,7 +67,7 @@ Fill in the required values in `.env`:
 | `GOOGLE_TOKEN_PATH` | Path to a Google OAuth token JSON file (default: `./google-token.json`) |
 | `OPENCODE_API_KEY` | API key from [OpenCode](https://opencode.ai/) |
 | `IMAGE_ORIGINALS_DIR` | Where uploaded images are stored (default: `./data/images/originals`) |
-| `IMGPROXY_BASE_URL` | Base URL for imgproxy (default: `http://localhost:3000/img`) |
+| `IMGPROXY_BASE_URL` | Base URL for imgproxy (default: `http://localhost:8080/img` for dev, `http://localhost:3000/img` for Docker) |
 | `IMGPROXY_KEY` | 64-char hex key for imgproxy URL signing |
 | `IMGPROXY_SALT` | 64-char hex salt for imgproxy URL signing |
 
@@ -81,22 +81,22 @@ This creates `IMGPROXY_KEY` and `IMGPROXY_SALT` and writes them into your `.env`
 
 ### 4a. Local dev with hot reload
 
-Run imgproxy + nginx in Docker, and the app on your host with hot module replacement:
+Run imgproxy in Docker, and the app on your host with hot module replacement:
 
 ```bash
-# Terminal 1 — start imgproxy + reverse proxy
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Terminal 1 — start imgproxy
+pnpm docker:dev
 
 # Terminal 2 — start the dev server
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). The app (port 3000) loads images directly from imgproxy (port 8080) — no nginx needed since `<img>` tags don't trigger CORS.
 
 ### 4b. Full Docker stack (production-like)
 
 ```bash
-docker compose up -d
+pnpm docker:up
 ```
 
 This builds the app image and runs nginx + app + imgproxy together, just like the k3s deployment. Open [http://localhost:3000](http://localhost:3000).

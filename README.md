@@ -31,6 +31,7 @@ A web app for tracking frozen breast milk storage. Snap a photo of a milk packet
 | AI / Vision | [OpenCode AI](https://opencode.ai/) (`minimax-m3` model) via [Vercel AI SDK](https://sdk.vercel.ai/) |
 | Image processing | [Sharp](https://sharp.pixelplumbing.com/) (resize + optimize on upload) |
 | Image serving | [imgproxy](https://imgproxy.net/) (on-the-fly resize/crop with signed URLs) |
+| Image caching | Browser/CDN via `Cache-Control: max-age=31536000` (1 year). imgproxy's server-side cache is [Pro-only](https://docs.imgproxy.net/cache/internal). |
 | Database | Google Sheets (yes, really — it's simple and shareable) |
 | Deployment | Docker → k3s (FluxCD + Helm) |
 

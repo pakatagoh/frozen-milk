@@ -226,6 +226,13 @@ The deployment is GitOps-driven from the **homelab repo**, not this one.
 
 ## Known gotchas
 
+- **imgproxy caching:** The server-side processing cache (`IMGPROXY_CACHE_USE`)
+  is an imgproxy **Pro** feature — the open-source `darthsim/imgproxy:v4` does
+  not have it. The old `IMGPROXY_CACHE_DIR` env var was never a valid option in
+  v4 and has been removed. imgproxy does send `Cache-Control: max-age=31536000`
+  (1 year) by default, so browsers and CDNs will cache responses. For local dev,
+  repeated requests to the same image URL are re-processed each time (typically
+  ~27ms for a 400×400 resize — not a problem).
 - **Sharp in Docker:** The production Dockerfile installs `python3 make g++`
   in the final stage because `sharp` needs them at runtime for install scripts
   (not just build time). Don't remove them without testing.

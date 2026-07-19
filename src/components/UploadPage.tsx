@@ -1,39 +1,35 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { uploadMilk } from "@/lib/upload-fn";
-import { Camera, Loader2 } from "lucide-react";
+import type { MilkPacketResult } from "@/lib/ai";
+import { Camera, RotateCcw } from "lucide-react";
 
 interface PendingEntry {
   id: string;
   previewUrl: string;
-  status: "uploading" | "pending" | "analyzing" | "writing" | "done" | "error";
-  jobId?: string;
+  status: "processing" | "done" | "error";
+  result?: MilkPacketResult;
   error?: string;
 }
 
-const STATUS_ICONS: Record<PendingEntry["status"], string> = {
-  uploading: "⏳",
-  pending: "⏳",
-  analyzing: "🔍",
-  writing: "📝",
+const STATUS_ICON: Record<PendingEntry["status"], string> = {
+  processing: "🔍",
   done: "✅",
   error: "❌",
 };
 
-const STATUS_LABELS: Record<PendingEntry["status"], string> = {
-  uploading: "Uploading...",
-  pending: "Queued...",
-  analyzing: "Reading label...",
-  writing: "Saving...",
+const STATUS_LABEL: Record<PendingEntry["status"], string> = {
+  processing: "Reading label...",
   done: "Done",
   error: "Failed",
 };
 
 export function UploadPage() {
   const [entries, setEntries] = useState<PendingEntry[]>([]);
-  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Keeps the original File for each entry so a failed upload can be resubmitted.
+  const filesRef = useRef<Map<string, File>>(new Map());
   const uploadMilkFn = useServerFn(uploadMilk);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -43,49 +39,49 @@ export function UploadPage() {
     e.target.value = "";
   }
 
-  async function handleFile(file: File) {
-    const optimisticId = crypto.randomUUID();
+  function handleFile(file: File) {
+    const id = crypto.randomUUID();
+    filesRef.current.set(id, file);
     const previewUrl = URL.createObjectURL(file);
 
-    setEntries((prev) => [
-      { id: optimisticId, previewUrl, status: "uploading" },
-      ...prev,
-    ]);
-    setUploading(true);
+    // Optimistic entry appears immediately. The upload runs in the background,
+    // so the user can keep snapping more photos without waiting for this one.
+    setEntries((prev) => [{ id, previewUrl, status: "processing" }, ...prev]);
+    void runUpload(id, file);
+  }
 
+  function retry(id: string) {
+    const file = filesRef.current.get(id);
+    if (!file) return;
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === id ? { ...e, status: "processing", error: undefined } : e,
+      ),
+    );
+    void runUpload(id, file);
+  }
+
+  async function runUpload(id: string, file: File) {
     const form = new FormData();
     form.append("image", file);
-
     try {
-      const { jobId } = await uploadMilkFn({ data: form });
+      const { result } = await uploadMilkFn({ data: form });
       setEntries((prev) =>
-        prev.map((e) =>
-          e.id === optimisticId ? { ...e, status: "pending", jobId } : e,
-        ),
+        prev.map((e) => (e.id === id ? { ...e, status: "done", result } : e)),
       );
-
-      await pollJob(jobId, (status) => {
-        setEntries((prev) =>
-          prev.map((e) => (e.id === optimisticId ? { ...e, status } : e)),
-        );
-      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       setEntries((prev) =>
         prev.map((e) =>
-          e.id === optimisticId ? { ...e, status: "error", error: msg } : e,
+          e.id === id ? { ...e, status: "error", error: msg } : e,
         ),
       );
-    } finally {
-      setUploading(false);
     }
   }
 
   return (
     <main className="mx-auto max-w-md px-4 py-8">
-      <h1 className="mb-6 text-center text-2xl font-bold">
-        🍼 Baby Tracker
-      </h1>
+      <h1 className="mb-6 text-center text-2xl font-bold">🍼 Baby Tracker</h1>
 
       <div className="mb-6 flex justify-center">
         <input
@@ -96,13 +92,8 @@ export function UploadPage() {
           className="hidden"
           onChange={handleFileSelect}
         />
-        <Button
-          size="lg"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="animate-spin" /> : <Camera />}
-          {uploading ? "Uploading..." : "Snap Milk Packet"}
+        <Button size="lg" onClick={() => fileInputRef.current?.click()}>
+          <Camera /> Snap Milk Packet
         </Button>
       </div>
 
@@ -130,10 +121,26 @@ export function UploadPage() {
               />
               <div className="flex-1">
                 <span className="text-sm font-medium">
-                  {STATUS_ICONS[entry.status]} {STATUS_LABELS[entry.status]}
+                  {STATUS_ICON[entry.status]} {STATUS_LABEL[entry.status]}
                 </span>
+                {entry.status === "done" && entry.result && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Saved {entry.result.amount_ml}ml · {entry.result.date}{" "}
+                    {entry.result.time}
+                  </p>
+                )}
                 {entry.error && (
                   <p className="mt-1 text-xs text-red-600">{entry.error}</p>
+                )}
+                {entry.status === "error" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() => retry(entry.id)}
+                  >
+                    <RotateCcw /> Resubmit
+                  </Button>
                 )}
               </div>
             </div>
@@ -142,38 +149,4 @@ export function UploadPage() {
       )}
     </main>
   );
-}
-
-async function pollJob(
-  jobId: string,
-  onStatus: (status: PendingEntry["status"]) => void,
-  maxRetries = 30,
-): Promise<void> {
-  let retries = 0;
-  while (retries < maxRetries) {
-    const res = await fetch(`/api/jobs/${jobId}`);
-    if (!res.ok) throw new Error("Failed to check job status");
-    const job = await res.json();
-
-    switch (job.status) {
-      case "done":
-        onStatus("done");
-        return;
-      case "failed":
-        onStatus("error");
-        throw new Error(job.error || "Processing failed");
-      case "processing":
-        onStatus(retries < 5 ? "analyzing" : "writing");
-        break;
-      case "pending":
-        onStatus("pending");
-        break;
-    }
-
-    retries++;
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-
-  onStatus("error");
-  throw new Error("Timed out waiting for analysis");
 }

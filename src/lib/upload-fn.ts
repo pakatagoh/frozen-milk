@@ -11,22 +11,7 @@ export const uploadMilk = createServerFn({ method: "POST" })
     return file;
   })
   .handler(async ({ data: file }) => {
-    // Dynamic imports — these modules use Node builtins and run only on the server
-    const { saveUpload, generateImgproxyUrl } = await import("./images");
-    const { createJob } = await import("./jobs");
-    const { processPendingJobs } = await import("./worker");
-
-    const { storedPath, optimizedBase64 } = await saveUpload(file, "milk");
-    const previewUrl = generateImgproxyUrl(storedPath, 400, 400);
-
-    const jobId = createJob({
-      storedPath,
-      fileName: file.name,
-      mimeType: "image/jpeg",
-      base64: optimizedBase64,
-    });
-
-    processPendingJobs();
-
-    return { jobId, previewUrl };
+    // Dynamic import — this module uses Node builtins and runs only on the server.
+    const { processUpload } = await import("./process-upload");
+    return processUpload(file);
   });

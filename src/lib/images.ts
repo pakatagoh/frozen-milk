@@ -10,8 +10,18 @@ const JPEG_QUALITY = 82;
 
 const IMGPROXY_BASE =
   process.env.IMGPROXY_BASE_URL || "https://app.pakatagoh.com/img";
-const IMGPROXY_KEY = hexToBytes(process.env.IMGPROXY_KEY!);
-const IMGPROXY_SALT = hexToBytes(process.env.IMGPROXY_SALT!);
+
+function getImgproxyKey(): Buffer {
+  const key = process.env.IMGPROXY_KEY;
+  if (!key) throw new Error("IMGPROXY_KEY is not set");
+  return Buffer.from(key, "hex");
+}
+
+function getImgproxySalt(): Buffer {
+  const salt = process.env.IMGPROXY_SALT;
+  if (!salt) throw new Error("IMGPROXY_SALT is not set");
+  return Buffer.from(salt, "hex");
+}
 
 export async function saveUpload(
   file: File,
@@ -26,7 +36,7 @@ export async function saveUpload(
     .toBuffer();
 
   const id = crypto.randomUUID();
-  const datePath = new Date().toISOString().slice(0, 7); // "2026-07"
+  const datePath = new Date().toISOString().slice(0, 7);
   const relativePath = `${category}/${datePath}/${id}.jpg`;
   const fullPath = path.join(ORIGINALS, relativePath);
 
@@ -50,15 +60,14 @@ export function generateImgproxyUrl(
   const source = `local:///images/originals/${storedPath}`;
   const unsigned = `/${resize}/plain/${source}`;
 
+  const key = getImgproxyKey();
+  const salt = getImgproxySalt();
+
   const signature = crypto
-    .createHmac("sha256", IMGPROXY_KEY)
-    .update(IMGPROXY_SALT)
+    .createHmac("sha256", key)
+    .update(salt)
     .update(unsigned)
     .digest("base64url");
 
   return `${IMGPROXY_BASE}/${signature}${unsigned}`;
-}
-
-function hexToBytes(hex: string): Buffer {
-  return Buffer.from(hex, "hex");
 }

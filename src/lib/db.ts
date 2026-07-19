@@ -49,3 +49,9 @@ export interface JobPayload {
   mimeType: string;
   base64: string;
 }
+
+// Startup: recover stale jobs and kick worker (dynamic import avoids circular dep)
+setTimeout(async () => {
+  const { initWorker } = await import("./init");
+  initWorker();
+}, 1000);

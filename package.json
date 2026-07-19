@@ -12,9 +12,13 @@
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docker:up": "docker compose up -d",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.16",
     "@ai-sdk/openai": "^4.0.16",
     "@base-ui/react": "^1.6.0",
     "@tailwindcss/vite": "^4.1.18",

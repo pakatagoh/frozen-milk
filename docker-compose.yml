@@ -1,0 +1,68 @@
+# Docker Compose dev/test mirror of the k3s baby + imgproxy setup.
+#
+# Architecture mirrors the k3s deployment:
+#   k3s:  Traefik ingress  →  /    → baby:3000
+#                             /img → imgproxy:8080
+#   dev:  nginx (port 3000) →  /    → app:3000
+#                             /img → imgproxy:8080
+#
+# Usage:
+#   1. Generate dev keys:  ./scripts/generate-imgproxy-keys.sh
+#   2. Start:              docker compose up -d
+#   3. Open:               http://localhost:3000
+#   4. imgproxy health:    http://localhost:3000/img/health
+
+services:
+  # ── Reverse proxy (mirrors k3s Traefik ingress) ──────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+      - imgproxy
+    restart: unless-stopped
+
+  # ── Baby app (TanStack Start + Nitro) ────────────────────────
+  app:
+    build: .
+    environment:
+      NODE_ENV: production
+      # Image storage
+      IMAGE_ORIGINALS_DIR: /images/originals
+      # imgproxy URL — nginx routes /img → imgproxy, so browser hits same origin
+      IMGPROXY_BASE_URL: http://localhost:3000/img
+      # imgproxy signing (must match imgproxy service below)
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      # Google Sheets & AI (from .env)
+      GOOGLE_SHEET_ID: ${GOOGLE_SHEET_ID}
+      GOOGLE_SHEET_TAB: ${GOOGLE_SHEET_TAB}
+      GOOGLE_TOKEN_PATH: /secrets/google_token.json
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY}
+    volumes:
+      - images:/images
+      - ./google-token.json:/secrets/google_token.json:ro
+    depends_on:
+      - imgproxy
+    restart: unless-stopped
+
+  # ── imgproxy (on-the-fly image resizing/cropping) ────────────
+  imgproxy:
+    image: darthsim/imgproxy:v4
+    environment:
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /images/originals
+      IMGPROXY_CACHE_DIR: /images/cache
+      IMGPROXY_PATH_PREFIX: /img
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_ENABLE_AVIF_DETECTION: "true"
+    volumes:
+      - images:/images
+    restart: unless-stopped
+
+volumes:
+  images:

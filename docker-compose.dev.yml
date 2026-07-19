@@ -1,0 +1,33 @@
+# Override for local development with hot reload.
+# Runs only imgproxy in Docker. The baby app runs on the host via `pnpm dev`.
+#
+# Usage:
+#   pnpm docker:dev
+#
+# Then in another terminal:  pnpm dev
+#
+# Access the app at http://localhost:3000.
+# The host app writes to ./data/images/originals (set in .env).
+# imgproxy is exposed directly on port 8080 – set IMGPROXY_BASE_URL
+# in .env to http://localhost:8080/img for dev.
+
+services:
+  # Replace the production app with a lightweight no-op
+  app:
+    image: busybox:stable
+    command: ["sleep", "infinity"]
+    ports: []
+    environment: []
+    volumes: []
+
+  # Disable nginx in dev — not needed, access imgproxy directly
+  nginx:
+    profiles:
+      - disabled
+
+  # imgproxy: bind-mount host image dir so it sees files written by the host app
+  imgproxy:
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/images:/images

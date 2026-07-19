@@ -20,11 +20,19 @@ export interface MilkStorageBackend {
 
 // ─── Google Sheets implementation ───────────────────────────────────────────
 
-const SHEET_ID = "***REMOVED***";
-const TAB = "***REMOVED***";
-const TOKEN_PATH =
-  process.env.GOOGLE_TOKEN_PATH ||
-  "***REMOVED***";
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+// Spreadsheet ID, tab name, and OAuth token location are all provided via the
+// environment so nothing identifying is committed to the repository.
+const SHEET_ID = requireEnv("GOOGLE_SHEET_ID");
+const TAB = requireEnv("GOOGLE_SHEET_TAB");
+const TOKEN_PATH = requireEnv("GOOGLE_TOKEN_PATH");
 
 const HEADER_ROW = 1;
 
@@ -117,7 +125,7 @@ export function getStorageBackend(): MilkStorageBackend {
   return backend;
 }
 
-// ─── Convenience exports used by the worker ─────────────────────────────────
+// ─── Convenience exports used by the upload handler ────────────────────────────
 
 export async function appendToSheet(entry: MilkSheetEntry): Promise<number> {
   return backend.append(entry);

@@ -179,25 +179,25 @@ export function EntryCard({ entry }: EntryCardProps) {
               e.preventDefault();
               save();
             }}
-            className="flex flex-col gap-3 px-4 py-4"
+            className="flex flex-col gap-3 px-4 py-4 min-w-0"
           >
             <div className="flex flex-col gap-2">
-              <label>
+              <label className="min-w-0">
                 <span className="mb-1 block text-xs font-medium text-muted-foreground">Date</span>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-2 text-sm"
+                  className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-1.5 text-sm"
                 />
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className="mb-1 block text-xs font-medium text-muted-foreground">Time</span>
                 <input
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-2 text-sm"
+                  className="h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-1.5 text-sm"
                 />
               </label>
             </div>

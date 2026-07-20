@@ -10,3 +10,4 @@ mise.toml
 frozen-milk.db
 frozen-milk.db-wal
 frozen-milk.db-shm
+.output/

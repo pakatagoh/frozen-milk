@@ -17,6 +17,7 @@ import {
   AdvancedFilters,
   type NumOp,
 } from "@/components/AdvancedFilters";
+import { StorageSummary } from "@/components/StorageSummary";
 
 export function UploadPage() {
   const queryClient = useQueryClient();
@@ -222,6 +223,8 @@ export function UploadPage() {
           }}
         />
       )}
+
+      <StorageSummary entries={filteredEntries} />
 
       {/* ── Entry list ───────────────────────────────────────────── */}
       {loadError ? (

@@ -132,18 +132,17 @@ export function EntryCard({ entry }: EntryCardProps) {
           <div className="h-16 w-16 shrink-0 rounded-md bg-muted" />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">
+          <p className="text-base font-medium">
             {entry.date} {entry.time}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {entry.amount}ml · {entry.packets} pkt
-            {" · "}
-            <span title="Frozen">❄️ {entry.totalFrozen}</span>
-            {" · "}
-            <span title="Used">🍼 {entry.totalUsed}</span>
-          </p>
+          <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
+            <span>{entry.amount}ml</span>
+            <span>{entry.packets} total pkt</span>
+            <span title="Frozen">❄️ {entry.totalFrozen} frozen</span>
+            <span title="Used">🍼 {entry.totalUsed} used</span>
+          </div>
           {entry.notes && (
-            <p className="mt-1 text-pretty text-xs italic text-muted-foreground">{entry.notes}</p>
+            <p className="mt-1 text-pretty text-sm italic text-muted-foreground">{entry.notes}</p>
           )}
         </div>
       </div>

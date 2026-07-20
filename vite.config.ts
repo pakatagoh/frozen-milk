@@ -6,6 +6,7 @@ import { nitro } from "nitro/vite";
 
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
@@ -15,6 +16,36 @@ const config = defineConfig({
     tanstackStart(),
     nitro(),
     viteReact(),
+    VitePWA({
+      registerType: "autoUpdate",
+      outDir: ".output/public",
+      devOptions: {
+        enabled: true,
+      },
+      includeAssets: ["favicon.ico", "robots.txt"],
+      manifest: {
+        name: "Baby Tracker",
+        short_name: "Baby Tracker",
+        description: "Track frozen breast milk storage",
+        theme_color: "#7baf93",
+        background_color: "#faf6f2",
+        display: "standalone",
+        orientation: "portrait-primary",
+      },
+      pwaAssets: {
+        config: true,
+        image: "public/baby-icon.png",
+        overrideManifestIcons: true,
+        integration: {
+          outDir: ".output/public",
+        },
+      },
+      workbox: {
+        globDirectory: ".output/public",
+        globPatterns: ["**/*.{js,css,html,png,svg,ico,webmanifest}"],
+        cleanupOutdatedCaches: true,
+      },
+    }),
   ],
 });
 

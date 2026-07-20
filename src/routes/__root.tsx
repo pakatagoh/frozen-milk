@@ -32,11 +32,36 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         name: 'apple-mobile-web-app-status-bar-style',
         content: 'default',
       },
+      {
+        name: 'theme-color',
+        content: '#7baf93',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.webmanifest',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/apple-touch-icon-180x180.png',
+        sizes: '180x180',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/pwa-64x64.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '192x192',
+        href: '/pwa-192x192.png',
       },
     ],
   }),

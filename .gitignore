@@ -25,3 +25,4 @@ google-token.json
 
 # Local dev data (images, DB)
 data/
+tailwindcss-*.log

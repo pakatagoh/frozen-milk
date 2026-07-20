@@ -21,14 +21,16 @@ const MilkPacketSchema = z.object({
   amount_ml: z
     .number()
     .int()
-    .positive()
+    .min(10)
+    .max(500)
     .describe(
       "Amount per packet in ml, typically 80, 90, or 100",
     ),
   packets: z
     .number()
     .int()
-    .positive()
+    .min(1)
+    .max(10)
     .default(1)
     .describe(
       "Number of packets photographed. Default 1 unless multiple visible.",

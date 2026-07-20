@@ -105,7 +105,7 @@ export function UploadPage() {
 
   const parsePickerDate = (s: string): number => {
     if (!s) return NaN;
-    const d = new Date(s + "T00:00:00Z");
+    const d = new Date(s + "T00:00:00");
     return d.getTime();
   };
 
@@ -129,7 +129,7 @@ export function UploadPage() {
       }
       if (dateEnd) {
         const ts = parseSheetDate(e.date);
-        if (!Number.isNaN(ts) && ts > parsePickerDate(dateEnd)) return false;
+        if (!Number.isNaN(ts) && ts > parsePickerDate(dateEnd) + 86_399_999) return false;
       }
 
       if (!matchesNumFilter(e.amount, amountOp, amountVal)) return false;

@@ -38,3 +38,36 @@ export function formatExpiryMonth(key: string): string {
   });
   return full;
 }
+
+/**
+ * Parse a sheet date string ("DD-Mon-YY") and add `months` offset.
+ * Returns "DD-Mon-YY" (e.g., "15-Oct-26") or `null` if unparseable.
+ */
+export function getExpiryDate(
+  entry: MilkSheetEntry,
+  offsetMonths = 3,
+): string | null {
+  const m = entry.date.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
+  if (!m) return null;
+
+  const monthIdx = MONTHS.indexOf(m[2] as (typeof MONTHS)[number]);
+  if (monthIdx === -1) return null;
+
+  const d = new Date(2000 + Number(m[3]), monthIdx, Number(m[1]));
+  if (isNaN(d.getTime())) return null;
+
+  d.setMonth(d.getMonth() + offsetMonths);
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${dd}-${MONTHS[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
+}
+
+/** "15-Oct-26" → "15 October 2026" */
+export function formatExpiryDate(dateStr: string): string {
+  const m = dateStr.match(/^(\d{2})-(\w{3})-(\d{2})$/);
+  if (!m) return dateStr;
+  const idx = MONTHS.indexOf(m[2] as (typeof MONTHS)[number]);
+  if (idx === -1) return dateStr;
+  const d = new Date(2000 + Number(m[3]), idx, Number(m[1]));
+  return d.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+}

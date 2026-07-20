@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { MilkSheetEntry } from "@/lib/sheets";
-import { getExpiryMonth, formatExpiryMonth } from "@/lib/expiry";
+import { getExpiryMonth, getExpiryDate, formatExpiryDate, formatExpiryMonth } from "@/lib/expiry";
 
 interface StorageSummaryProps {
   entries: MilkSheetEntry[];
@@ -21,20 +21,29 @@ function buildStats(entries: MilkSheetEntry[]) {
       ml: number;
       /** amount → totalFrozen count */
       byAmount: Map<number, number>;
+      /** Earliest expiry date string in this month, e.g. "15-Oct-26" */
+      earliestDate: string | null;
     }
   >();
 
   for (const e of frozen) {
-    const key = getExpiryMonth(e);
-    if (!key) continue;
+    const monthKey = getExpiryMonth(e);
+    if (!monthKey) continue;
 
-    let group = byMonth.get(key);
+    let group = byMonth.get(monthKey);
     if (!group) {
-      group = { packets: 0, ml: 0, byAmount: new Map() };
-      byMonth.set(key, group);
+      group = { packets: 0, ml: 0, byAmount: new Map(), earliestDate: null };
+      byMonth.set(monthKey, group);
     }
     group.packets += e.totalFrozen;
     group.ml += e.amount * e.totalFrozen;
+
+    // Track earliest expiry date within this month
+    const expiryDate = getExpiryDate(e);
+    if (expiryDate && (!group.earliestDate || expiryDate < group.earliestDate)) {
+      group.earliestDate = expiryDate;
+    }
+
     group.byAmount.set(
       e.amount,
       (group.byAmount.get(e.amount) ?? 0) + e.totalFrozen,
@@ -85,7 +94,9 @@ export function StorageSummary({ entries }: StorageSummaryProps) {
               <p className="font-medium">
                 Next expiry:{" "}
                 <span className="font-semibold">
-                  {formatExpiryMonth(stats.nextMonthKey)}
+                  {stats.nextMonth.earliestDate
+                    ? formatExpiryDate(stats.nextMonth.earliestDate)
+                    : formatExpiryMonth(stats.nextMonthKey)}
                 </span>
               </p>
               <p className="text-muted-foreground">

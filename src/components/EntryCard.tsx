@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { updateEntry } from "@/lib/update-entry-fn";
+import { getExpiryDate } from "@/lib/expiry";
 import type { MilkSheetEntry } from "@/lib/sheets";
 
 interface EntryCardProps {
@@ -134,6 +135,9 @@ export function EntryCard({ entry }: EntryCardProps) {
         <div className="min-w-0 flex-1">
           <p className="text-base font-medium">
             {entry.date} {entry.time}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Expires {getExpiryDate(entry) ?? "—"}
           </p>
           <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
             <span>{entry.amount}ml</span>

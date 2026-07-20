@@ -14,6 +14,10 @@ export interface MilkSheetEntry {
   totalUsed: number; // 0
   notes: string; // "" or handwritten note
   imageUrl: string; // imgproxy URL
+  /** Pre-computed srcset for 64×64 thumbnails (server-enriched). */
+  srcSetThumb?: string;
+  /** Pre-computed srcset for modal lightbox (server-enriched). */
+  srcSetLightbox?: string;
 }
 
 export interface MilkStorageBackend {

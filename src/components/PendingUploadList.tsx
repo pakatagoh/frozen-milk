@@ -1,12 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { MilkPacketResult } from "@/lib/ai";
 import { Loader2, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
-import { generateImgproxySrcSet, parseStoredPathFromUrl } from "@/lib/images";
 
 export interface PendingEntry {
   id: string;
   previewUrl: string;
+  srcSetThumb?: string;
   status: "processing" | "done" | "error";
   result?: MilkPacketResult;
   error?: string;
@@ -19,26 +19,22 @@ interface PendingUploadListProps {
 
 function Thumbnail({
   previewUrl,
+  srcSetThumb,
   status,
 }: {
   previewUrl: string;
+  srcSetThumb?: string;
   status: PendingEntry["status"];
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const showImg = previewUrl && !imgFailed;
-
-  const thumbSrcSet = useMemo(() => {
-    const storedPath = parseStoredPathFromUrl(previewUrl);
-    if (!storedPath) return undefined;
-    return generateImgproxySrcSet(storedPath, [64, 128, 256]);
-  }, [previewUrl]);
 
   return (
     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
       {showImg && (
         <img
           src={previewUrl}
-          srcSet={thumbSrcSet}
+          srcSet={srcSetThumb}
           sizes="64px"
           alt="Milk packet"
           className="h-full w-full object-cover"
@@ -71,7 +67,7 @@ export function PendingUploadList({ pending, onRetry }: PendingUploadListProps) 
                 : "border-border bg-card"
           }`}
         >
-          <Thumbnail previewUrl={entry.previewUrl} status={entry.status} />
+          <Thumbnail previewUrl={entry.previewUrl} srcSetThumb={entry.srcSetThumb} status={entry.status} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {entry.status === "processing" && (

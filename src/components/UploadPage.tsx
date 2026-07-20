@@ -63,10 +63,12 @@ export function UploadPage() {
     form.append("image", file);
     console.log("[client] starting upload, id:", id);
     try {
-      const { result } = await uploadMilkFn({ data: form });
+      const { result, srcSetThumb } = await uploadMilkFn({ data: form });
       console.log("[client] upload done, id:", id, "result:", result);
       setPending((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, status: "done", result } : e)),
+        prev.map((e) =>
+          e.id === id ? { ...e, status: "done", result, srcSetThumb } : e,
+        ),
       );
       // A new row was appended to the sheet — refetch the list.
       void queryClient.invalidateQueries({ queryKey: ["entries"] });

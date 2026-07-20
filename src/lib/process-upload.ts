@@ -1,9 +1,11 @@
 import { analyzeMilkPacket, type MilkPacketResult } from "./ai";
 import { saveUpload, generateImgproxyUrl } from "./images";
+import { generateImgproxySrcSet } from "./imgproxy-url";
 import { appendToSheet } from "./sheets";
 
 export interface UploadResult {
   previewUrl: string;
+  srcSetThumb: string;
   result: MilkPacketResult;
 }
 
@@ -30,6 +32,7 @@ export function processUpload(file: File): Promise<UploadResult> {
     console.log("[process-upload] saved to:", storedPath, "base64 length:", optimizedBase64.length);
 
     const previewUrl = generateImgproxyUrl(storedPath, 400, 400);
+    const srcSetThumb = generateImgproxySrcSet(storedPath, [64, 128, 256]);
     console.log("[process-upload] previewUrl:", previewUrl);
 
     console.log("[process-upload] starting AI analysis");
@@ -49,7 +52,7 @@ export function processUpload(file: File): Promise<UploadResult> {
     });
     console.log("[process-upload] sheet append done");
 
-    return { previewUrl, result };
+    return { previewUrl, srcSetThumb, result };
   });
 
   // Keep the chain alive even if a step rejects, so one failure doesn't stall

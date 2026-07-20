@@ -20,6 +20,18 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       {
         title: 'Baby Tracker',
       },
+      {
+        name: 'description',
+        content: 'Track frozen breast milk storage',
+      },
+      {
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-status-bar-style',
+        content: 'default',
+      },
     ],
     links: [
       {

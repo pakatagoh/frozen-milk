@@ -3,6 +3,12 @@ import { saveUpload, generateImgproxyUrl } from "./images";
 import { generateImgproxySrcSet } from "./imgproxy-url";
 import { appendToSheet } from "./sheets";
 
+/** Current time as ISO 8601 in SGT (+08:00). */
+function sgtISO(): string {
+  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  return now.toISOString().replace("Z", "+08:00");
+}
+
 export interface UploadResult {
   id: string;
   previewUrl: string;
@@ -51,6 +57,11 @@ export function processUpload(file: File): Promise<UploadResult> {
       totalUsed: 0,
       notes: "",
       imageUrl: previewUrl,
+      // Metadata
+      createdAt: sgtISO(),
+      updatedAt: "",
+      used: false,
+      usedAt: "",
     });
     console.log("[process-upload] sheet append done, id:", id);
 

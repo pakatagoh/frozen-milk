@@ -2,6 +2,14 @@ import { google } from "googleapis";
 import type { sheets_v4 } from "googleapis";
 import { readFileSync } from "node:fs";
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Current time as ISO 8601 in SGT (+08:00), matching the Python scripts. */
+function sgtISO(): string {
+  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  return now.toISOString().replace("Z", "+08:00");
+}
+
 // ─── Abstract storage interface ─────────────────────────────────────────────
 
 export interface MilkSheetEntry {
@@ -10,7 +18,7 @@ export interface MilkSheetEntry {
   date: string; // "15-Jul-26"
   time: string; // "19:30"
   amount: number; // 80
-  packets: number; // 2
+  packets: number; // 1 (always 1 after "unrolling" multi-packet rows)
   totalFrozen: number; // 0
   totalUsed: number; // 0
   notes: string; // "" or handwritten note
@@ -19,6 +27,15 @@ export interface MilkSheetEntry {
   srcSetThumb?: string;
   /** Pre-computed srcset for modal lightbox (server-enriched). */
   srcSetLightbox?: string;
+  // ── Metadata columns (J-M) ──────────────────────────────────────────
+  /** ISO 8601 timestamp — when this row was first created. */
+  createdAt: string;
+  /** ISO 8601 timestamp — when this row was last modified (empty if never). */
+  updatedAt: string;
+  /** Checkbox — TRUE when this packet has been consumed. */
+  used: boolean;
+  /** ISO 8601 timestamp — when the packet was marked used (empty if not). */
+  usedAt: string;
 }
 
 export interface MilkStorageBackend {
@@ -78,7 +95,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${nextRow}:I${nextRow}`,
+      range: `'${tab}'!A${nextRow}:M${nextRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -86,13 +103,18 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
             `'${entry.date}`,
             `'${entry.time}`,
             entry.amount,
-            entry.packets,
+            1, // always 1 packet per row
             // Total frozen = packets - total used (formula, not static value)
             `=D${nextRow}-F${nextRow}`,
             entry.totalUsed,
             entry.notes,
             entry.imageUrl,
             id,
+            // Metadata columns (J-M)
+            `'${entry.createdAt || sgtISO()}`, // createdAt (caller's value or now)
+            "", // updatedAt (empty until row is modified)
+            false, // used checkbox
+            "", // usedAt
           ],
         ],
       },
@@ -108,7 +130,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
 
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${HEADER_ROW + 1}:I`,
+      range: `'${tab}'!A${HEADER_ROW + 1}:M`,
     });
 
     const rows = result.data.values || [];
@@ -132,6 +154,10 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
       totalUsed: Number(lastRow[5]) || 0,
       notes: String(lastRow[6] || ""),
       imageUrl: String(lastRow[7] || ""),
+      createdAt: String(lastRow[9] || "").replace(/^'/, ""),
+      updatedAt: String(lastRow[10] || "").replace(/^'/, ""),
+      used: String(lastRow[11] || "").toUpperCase() === "TRUE",
+      usedAt: String(lastRow[12] || "").replace(/^'/, ""),
     };
   }
 
@@ -142,7 +168,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
 
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${HEADER_ROW + 1}:I`,
+      range: `'${tab}'!A${HEADER_ROW + 1}:M`,
     });
 
     const rows = result.data.values || [];
@@ -160,6 +186,10 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
         totalUsed: Number(row[5]) || 0,
         notes: String(row[6] || ""),
         imageUrl: String(row[7] || ""),
+        createdAt: String(row[9] || "").replace(/^'/, ""),
+        updatedAt: String(row[10] || "").replace(/^'/, ""),
+        used: String(row[11] || "").toUpperCase() === "TRUE",
+        usedAt: String(row[12] || "").replace(/^'/, ""),
       });
     }
     return entries;
@@ -176,27 +206,35 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
     // Read the existing row so we only overwrite changed columns
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${rowIndex}:I${rowIndex}`,
+      range: `'${tab}'!A${rowIndex}:M${rowIndex}`,
     });
     const values = existing.data.values?.[0] ?? [];
 
     const date = fields.date !== undefined ? `'${fields.date}` : values[0];
     const time = fields.time !== undefined ? `'${fields.time}` : values[1];
     const amount = fields.amount ?? values[2];
-    const packets = fields.packets ?? values[3];
+    const packets = 1; // always 1 after unrolling
     const totalFrozen = `=D${rowIndex}-F${rowIndex}`; // always formula
     const totalUsed = fields.totalUsed ?? values[5];
     const notes = fields.notes ?? values[6];
     const imageUrl = fields.imageUrl ?? values[7];
     const id = values[8]; // never mutated on update
+    // Metadata columns — preserve existing unless explicitly provided
+    const createdAt = fields.createdAt !== undefined
+      ? `'${fields.createdAt}` : values[9];
+    const updatedAt = `'${sgtISO()}`; // always touch on update
+    const used = fields.used !== undefined ? fields.used : values[11];
+    const usedAt = fields.usedAt !== undefined
+      ? `'${fields.usedAt}` : values[12];
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${rowIndex}:I${rowIndex}`,
+      range: `'${tab}'!A${rowIndex}:M${rowIndex}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
-          [date, time, amount, packets, totalFrozen, totalUsed, notes, imageUrl, id],
+          [date, time, amount, packets, totalFrozen, totalUsed, notes, imageUrl, id,
+           createdAt, updatedAt, used, usedAt],
         ],
       },
     });

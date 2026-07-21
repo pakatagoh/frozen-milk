@@ -1,0 +1,108 @@
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getEntries } from "@/lib/entries-fn";
+import { getExpiryDate } from "@/lib/expiry";
+import type { MilkSheetEntry } from "@/lib/sheets";
+import { TotalFrozenCard } from "@/pages/overview/TotalFrozenCard";
+import { StatsGrid } from "@/pages/overview/StatsGrid";
+import { ExpiryTimeline } from "@/pages/overview/ExpiryTimeline";
+import { RecentEntries } from "@/pages/overview/RecentEntries";
+
+function parseSheetDate(s: string): number {
+  const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
+  if (!m) return NaN;
+  const d = new Date(`${m[2]} ${m[1]}, 20${m[3]}`);
+  return d.getTime();
+}
+
+function daysUntilExpiry(entry: MilkSheetEntry): number {
+  const freezeMs = parseSheetDate(entry.date);
+  if (Number.isNaN(freezeMs)) return Infinity;
+  const expiryMs = freezeMs + 3 * 30 * 24 * 60 * 60 * 1000; // approx 3 months
+  const now = Date.now();
+  return Math.ceil((expiryMs - now) / (24 * 60 * 60 * 1000));
+}
+
+export function OverviewPage() {
+  const { data: entries = [] } = useQuery({
+    queryKey: ["entries"],
+    queryFn: () => getEntries(),
+  });
+
+  const activeEntries = useMemo(
+    () => entries.filter((e) => !e.used),
+    [entries],
+  );
+
+  const totalMl = useMemo(
+    () => activeEntries.reduce((sum, e) => sum + e.amount, 0),
+    [activeEntries],
+  );
+
+  const bagCount = activeEntries.length;
+
+  // Upcoming expiry: the earliest freezeDate + 3mo among active entries
+  const upcomingExpiry = useMemo(() => {
+    let earliest: string | null = null;
+    for (const e of activeEntries) {
+      const d = getExpiryDate(e);
+      if (d && (!earliest || d < earliest)) earliest = d;
+    }
+    return earliest;
+  }, [activeEntries]);
+
+  // Expiring soon: active entries where days left ≤ 7
+  const expiringSoon = useMemo(
+    () => activeEntries.filter((e) => daysUntilExpiry(e) <= 7).length,
+    [activeEntries],
+  );
+
+  // Timeline buckets
+  const timelineBuckets = useMemo(() => {
+    const buckets = [
+      { label: "Within 1 week", color: "red", daysMax: 7, bags: 0, ml: 0 },
+      { label: "1–2 weeks", color: "orange", daysMax: 14, bags: 0, ml: 0 },
+      { label: "2–4 weeks", color: "amber", daysMax: 30, bags: 0, ml: 0 },
+      { label: "1–3 months", color: "green", daysMax: 90, bags: 0, ml: 0 },
+    ];
+
+    for (const e of activeEntries) {
+      const days = daysUntilExpiry(e);
+      const bucket = buckets.find((b) => days <= b.daysMax);
+      if (bucket) {
+        bucket.bags += 1;
+        bucket.ml += e.amount;
+      }
+    }
+
+    const maxBags = Math.max(...buckets.map((b) => b.bags), 1);
+    return buckets
+      .filter((b) => b.bags > 0)
+      .map((b) => ({ ...b, maxBags }));
+  }, [activeEntries]);
+
+  // Recent entries: last 3 by date+time descending
+  const recentEntries = useMemo(() => {
+    return [...entries]
+      .sort((a, b) => {
+        const aTs = parseSheetDate(a.date);
+        const bTs = parseSheetDate(b.date);
+        if (!Number.isNaN(aTs) && !Number.isNaN(bTs)) return bTs - aTs;
+        return 0;
+      })
+      .slice(0, 3);
+  }, [entries]);
+
+  return (
+    <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6 pb-24">
+      <TotalFrozenCard totalMl={totalMl} />
+      <StatsGrid
+        bagCount={bagCount}
+        upcomingExpiry={upcomingExpiry}
+        expiringSoon={expiringSoon}
+      />
+      <ExpiryTimeline buckets={timelineBuckets} />
+      <RecentEntries entries={recentEntries} />
+    </main>
+  );
+}

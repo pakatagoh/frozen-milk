@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OverviewPage } from "@/pages/OverviewPage";
+import { OverviewPage } from "@/pages/overview/OverviewPage";
 import { getEntries } from "@/lib/entries-fn";
 
 export const Route = createFileRoute("/")({

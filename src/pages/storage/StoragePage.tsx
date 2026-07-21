@@ -19,7 +19,7 @@ import {
 } from "@/components/AdvancedFilters";
 import { StorageSummary } from "@/components/StorageSummary";
 
-export function OverviewPage() {
+export function StoragePage() {
   const queryClient = useQueryClient();
   const { data: savedEntries = [], error: loadError } = useQuery({
     queryKey: ["entries"],
@@ -27,22 +27,13 @@ export function OverviewPage() {
   });
 
   const [pending, setPending] = useState<PendingEntry[]>([]);
-  // Keeps the original File for each entry so a failed upload can be resubmitted.
   const filesRef = useRef<Map<string, File>>(new Map());
   const uploadMilkFn = useServerFn(uploadMilk);
 
   function handleFile(file: File) {
-    console.log("[client] file selected:", {
-      name: file.name,
-      type: file.type,
-      size: `${(file.size / 1024).toFixed(1)} KB`,
-    });
     const id = crypto.randomUUID();
     filesRef.current.set(id, file);
     const previewUrl = URL.createObjectURL(file);
-
-    // Optimistic entry appears immediately. The upload runs in the background,
-    // so the user can keep snapping more photos without waiting for this one.
     setPending((prev) => [{ id, previewUrl, status: "processing" }, ...prev]);
     void runUpload(id, file);
   }
@@ -66,20 +57,16 @@ export function OverviewPage() {
   async function runUpload(id: string, file: File) {
     const form = new FormData();
     form.append("image", file);
-    console.log("[client] starting upload, id:", id);
     try {
       const { id: serverId, result, srcSetThumb } = await uploadMilkFn({ data: form });
-      console.log("[client] upload done, id:", id, "→ serverId:", serverId, "result:", result);
       setPending((prev) =>
         prev.map((e) =>
           e.id === id ? { ...e, id: serverId, status: "done", result, srcSetThumb } : e,
         ),
       );
-      // A new row was appended to the sheet — refetch the list.
       void queryClient.invalidateQueries({ queryKey: ["entries"] });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
-      console.error("[client] upload failed, id:", id, "error:", err);
       setPending((prev) =>
         prev.map((e) =>
           e.id === id ? { ...e, status: "error", error: msg } : e,
@@ -89,7 +76,7 @@ export function OverviewPage() {
   }
 
   // ── Filters ─────────────────────────────────────────────────────
-  const [sortAsc, setSortAsc] = useState(true); // true = oldest first (sheet order)
+  const [sortAsc, setSortAsc] = useState(true);
   const [filter, setFilter] = useState<EntryFilter>("active");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -172,8 +159,8 @@ export function OverviewPage() {
 
   // ── Render ──────────────────────────────────────────────────────
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-center text-2xl font-bold">🍼 Baby Tracker</h1>
+    <main className="mx-auto w-full max-w-4xl px-4 py-8 pb-24">
+      <h1 className="mb-6 text-2xl font-bold">📦 Storage</h1>
 
       <SnapMilkPacketButton onFile={handleFile} />
 

@@ -1,21 +1,31 @@
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Package, Plus, BarChart3, Settings } from "lucide-react";
 
 interface NavItem {
   id: string;
   label: string;
+  to: string;
   icon: React.ReactNode;
   cta?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { id: "overview", label: "Overview", icon: <Home className="size-5" /> },
-  { id: "storage", label: "Storage", icon: <Package className="size-5" /> },
-  { id: "add", label: "Add", icon: <Plus className="size-6" />, cta: true },
-  { id: "stats", label: "Stats", icon: <BarChart3 className="size-5" /> },
-  { id: "settings", label: "Settings", icon: <Settings className="size-5" /> },
+  { id: "overview", label: "Overview", to: "/", icon: <Home className="size-5" /> },
+  { id: "storage", label: "Storage", to: "/storage", icon: <Package className="size-5" /> },
+  { id: "add", label: "Add", to: "", icon: <Plus className="size-6" />, cta: true },
+  { id: "stats", label: "Stats", to: "/stats", icon: <BarChart3 className="size-5" /> },
+  { id: "settings", label: "Settings", to: "/settings", icon: <Settings className="size-5" /> },
 ];
 
 export default function BottomNav() {
+  const { location } = useRouterState();
+  const pathname = location.pathname;
+
+  function isActive(to: string) {
+    if (to === "/") return pathname === "/";
+    return pathname.startsWith(to);
+  }
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/80
@@ -36,16 +46,21 @@ export default function BottomNav() {
               {item.icon}
             </button>
           ) : (
-            <button
+            <Link
               key={item.id}
-              type="button"
-              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5
-                         py-1 text-muted-foreground transition-colors"
+              to={item.to}
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5
+                         py-1 transition-colors ${
+                           isActive(item.to)
+                             ? "text-primary"
+                             : "text-muted-foreground"
+                         }`}
               aria-label={item.label}
+              aria-current={isActive(item.to) ? "page" : undefined}
             >
               {item.icon}
               <span className="text-[10px] font-medium leading-none">{item.label}</span>
-            </button>
+            </Link>
           ),
         )}
       </div>

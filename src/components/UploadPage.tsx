@@ -58,16 +58,21 @@ export function UploadPage() {
     void runUpload(id, file);
   }
 
+  function dismiss(id: string) {
+    setPending((prev) => prev.filter((e) => e.id !== id));
+    filesRef.current.delete(id);
+  }
+
   async function runUpload(id: string, file: File) {
     const form = new FormData();
     form.append("image", file);
     console.log("[client] starting upload, id:", id);
     try {
-      const { result, srcSetThumb } = await uploadMilkFn({ data: form });
-      console.log("[client] upload done, id:", id, "result:", result);
+      const { id: serverId, result, srcSetThumb } = await uploadMilkFn({ data: form });
+      console.log("[client] upload done, id:", id, "→ serverId:", serverId, "result:", result);
       setPending((prev) =>
         prev.map((e) =>
-          e.id === id ? { ...e, status: "done", result, srcSetThumb } : e,
+          e.id === id ? { ...e, id: serverId, status: "done", result, srcSetThumb } : e,
         ),
       );
       // A new row was appended to the sheet — refetch the list.
@@ -172,7 +177,7 @@ export function UploadPage() {
 
       <SnapMilkPacketButton onFile={handleFile} />
 
-      <PendingUploadList pending={pending} onRetry={retry} />
+      <PendingUploadList pending={pending} onRetry={retry} onDismiss={dismiss} />
 
       {/* ── Saved entries header ─────────────────────────────────── */}
       <div className="mb-3 flex items-center justify-between">
@@ -239,9 +244,9 @@ export function UploadPage() {
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {sortedEntries.map((entry: MilkSheetEntry, i: number) => (
+          {sortedEntries.map((entry: MilkSheetEntry) => (
             <EntryCard
-              key={`${entry.date}-${entry.time}-${i}`}
+              key={entry.id}
               entry={entry}
             />
           ))}

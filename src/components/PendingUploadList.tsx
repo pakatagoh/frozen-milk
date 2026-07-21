@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { MilkPacketResult } from "@/lib/ai";
-import { Loader2, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, RotateCcw, X } from "lucide-react";
 
 export interface PendingEntry {
   id: string;
@@ -15,6 +15,7 @@ export interface PendingEntry {
 interface PendingUploadListProps {
   pending: PendingEntry[];
   onRetry: (id: string) => void;
+  onDismiss: (id: string) => void;
 }
 
 function Thumbnail({
@@ -51,7 +52,7 @@ function Thumbnail({
   );
 }
 
-export function PendingUploadList({ pending, onRetry }: PendingUploadListProps) {
+export function PendingUploadList({ pending, onRetry, onDismiss }: PendingUploadListProps) {
   if (pending.length === 0) return null;
 
   return (
@@ -59,7 +60,7 @@ export function PendingUploadList({ pending, onRetry }: PendingUploadListProps) 
       {pending.map((entry) => (
         <div
           key={entry.id}
-          className={`flex items-center gap-3 rounded-lg border p-3 ${
+          className={`relative flex items-center gap-3 rounded-lg border p-3 ${
             entry.status === "done"
               ? "border-primary/30 bg-card"
               : entry.status === "error"
@@ -107,6 +108,17 @@ export function PendingUploadList({ pending, onRetry }: PendingUploadListProps) 
               </Button>
             )}
           </div>
+          {(entry.status === "done" || entry.status === "error") && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="absolute right-1 top-1 size-7"
+              onClick={() => onDismiss(entry.id)}
+              aria-label="Dismiss"
+            >
+              <X className="size-4" />
+            </Button>
+          )}
         </div>
       ))}
     </div>

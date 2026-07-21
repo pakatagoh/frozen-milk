@@ -4,6 +4,7 @@ import { generateImgproxySrcSet } from "./imgproxy-url";
 import { appendToSheet } from "./sheets";
 
 export interface UploadResult {
+  id: string;
   previewUrl: string;
   srcSetThumb: string;
   result: MilkPacketResult;
@@ -40,7 +41,8 @@ export function processUpload(file: File): Promise<UploadResult> {
     console.log("[process-upload] AI result:", result);
 
     console.log("[process-upload] appending to sheet");
-    await appendToSheet({
+    const { id } = await appendToSheet({
+      id: "",
       date: result.date,
       time: result.time,
       amount: result.amount_ml,
@@ -50,9 +52,9 @@ export function processUpload(file: File): Promise<UploadResult> {
       notes: "",
       imageUrl: previewUrl,
     });
-    console.log("[process-upload] sheet append done");
+    console.log("[process-upload] sheet append done, id:", id);
 
-    return { previewUrl, srcSetThumb, result };
+    return { id, previewUrl, srcSetThumb, result };
   });
 
   // Keep the chain alive even if a step rejects, so one failure doesn't stall

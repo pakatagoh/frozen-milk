@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 
 export interface MilkSheetEntry {
   rowIndex?: number; // 1-based row in the sheet (set when reading from sheet)
+  id: string; // UUID v4 — stable unique identifier
   date: string; // "15-Jul-26"
   time: string; // "19:30"
   amount: number; // 80
@@ -21,7 +22,7 @@ export interface MilkSheetEntry {
 }
 
 export interface MilkStorageBackend {
-  append(entry: MilkSheetEntry): Promise<number>;
+  append(entry: MilkSheetEntry): Promise<{ rowIndex: number; id: string }>;
   getLatest(): Promise<MilkSheetEntry | null>;
   getAll(): Promise<MilkSheetEntry[]>;
   update(rowIndex: number, fields: Partial<MilkSheetEntry>): Promise<void>;
@@ -60,7 +61,7 @@ function getSheetsClient(): sheets_v4.Sheets {
 }
 
 export class GoogleSheetsBackend implements MilkStorageBackend {
-  async append(entry: MilkSheetEntry): Promise<number> {
+  async append(entry: MilkSheetEntry): Promise<{ rowIndex: number; id: string }> {
     const sheetId = requireEnv("GOOGLE_SHEET_ID");
     const tab = requireEnv("GOOGLE_SHEET_TAB");
     const sheets = getSheetsClient();
@@ -73,10 +74,11 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
     const values = colAResult.data.values || [];
     const lastRow = values.length;
     const nextRow = lastRow + 1;
+    const id = crypto.randomUUID();
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${nextRow}:H${nextRow}`,
+      range: `'${tab}'!A${nextRow}:I${nextRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -90,12 +92,13 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
             entry.totalUsed,
             entry.notes,
             entry.imageUrl,
+            id,
           ],
         ],
       },
     });
 
-    return nextRow;
+    return { rowIndex: nextRow, id };
   }
 
   async getLatest(): Promise<MilkSheetEntry | null> {
@@ -105,7 +108,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
 
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${HEADER_ROW + 1}:H`,
+      range: `'${tab}'!A${HEADER_ROW + 1}:I`,
     });
 
     const rows = result.data.values || [];
@@ -120,6 +123,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
 
     return {
       rowIndex,
+      id: String(lastRow[8] || ""),
       date,
       time,
       amount: Number(lastRow[2]) || 0,
@@ -138,7 +142,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
 
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${HEADER_ROW + 1}:H`,
+      range: `'${tab}'!A${HEADER_ROW + 1}:I`,
     });
 
     const rows = result.data.values || [];
@@ -147,6 +151,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
       if (!row || row.length < 4) continue;
       entries.push({
         rowIndex: HEADER_ROW + 1 + i, // row 2, 3, 4, ...
+        id: String(row[8] || ""),
         date: String(row[0] || "").replace(/^'/, ""),
         time: String(row[1] || "").replace(/^'/, ""),
         amount: Number(row[2]) || 0,
@@ -171,7 +176,7 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
     // Read the existing row so we only overwrite changed columns
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${rowIndex}:H${rowIndex}`,
+      range: `'${tab}'!A${rowIndex}:I${rowIndex}`,
     });
     const values = existing.data.values?.[0] ?? [];
 
@@ -183,14 +188,15 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
     const totalUsed = fields.totalUsed ?? values[5];
     const notes = fields.notes ?? values[6];
     const imageUrl = fields.imageUrl ?? values[7];
+    const id = values[8]; // never mutated on update
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `'${tab}'!A${rowIndex}:H${rowIndex}`,
+      range: `'${tab}'!A${rowIndex}:I${rowIndex}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
-          [date, time, amount, packets, totalFrozen, totalUsed, notes, imageUrl],
+          [date, time, amount, packets, totalFrozen, totalUsed, notes, imageUrl, id],
         ],
       },
     });
@@ -211,7 +217,7 @@ export function getStorageBackend(): MilkStorageBackend {
 
 // ─── Convenience exports used by the upload handler ────────────────────────────
 
-export async function appendToSheet(entry: MilkSheetEntry): Promise<number> {
+export async function appendToSheet(entry: MilkSheetEntry): Promise<{ rowIndex: number; id: string }> {
   return backend.append(entry);
 }
 

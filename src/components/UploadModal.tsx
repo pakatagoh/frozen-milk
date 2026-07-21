@@ -2,10 +2,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { uploadPackets } from "@/lib/upload-packets-fn";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 
 type ModalState =
   | { phase: "hidden" }
@@ -85,77 +90,91 @@ export function UploadModal({ file, onClose }: UploadModalProps) {
   };
 
   const isOpen = state.phase !== "hidden";
+  const showClose = state.phase === "preview" || state.phase === "error";
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent
-        showCloseButton={state.phase === "preview" || state.phase === "error"}
-        className="sm:max-w-md"
+        className="max-w-sm gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-lg"
+        showCloseButton={false}
       >
+        {showClose && (
+          <DialogClose className="absolute top-3 right-3 z-10 rounded-full bg-black/30 p-1.5 text-white hover:bg-black/50 focus:ring-0 focus:outline-none">
+            <X className="size-4" />
+          </DialogClose>
+        )}
+
         {/* ── Preview phase ─────────────────────────────────── */}
         {state.phase === "preview" && (
           <>
-            <DialogHeader>
-              <DialogTitle>New Milk Packet</DialogTitle>
-            </DialogHeader>
-
             {/* Image preview */}
             {previewUrl && (
-              <div className="overflow-hidden rounded-lg border">
+              <div className="flex items-center justify-center bg-black">
                 <img
                   src={previewUrl}
                   alt="Milk packet preview"
-                  className="h-48 w-full object-cover"
+                  className="max-h-[50vh] w-full object-contain"
                 />
               </div>
             )}
 
-            {/* Packet count input */}
-            <div className="flex items-center gap-3">
-              <label
-                htmlFor="packetCount"
-                className="shrink-0 text-sm font-medium"
-              >
-                Number of packets:
-              </label>
-              <Input
-                id="packetCount"
-                type="number"
-                min={1}
-                max={50}
-                value={packetCount}
-                onChange={(e) => setPacketCount(e.target.value)}
-                className="w-20 text-center"
-              />
-            </div>
-
-            <Button
-              onClick={handleSubmit}
-              className="w-full"
-              disabled={
-                !Number.isInteger(Number(packetCount)) ||
-                Number(packetCount) < 1 ||
-                Number(packetCount) > 50
-              }
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+              className="flex flex-col gap-3 px-4 py-4"
             >
-              Submit
-            </Button>
+              <DialogTitle>New Milk Packet</DialogTitle>
+
+              {/* Packet count input */}
+              <div className="flex items-center gap-3">
+                <label
+                  htmlFor="packetCount"
+                  className="shrink-0 text-sm font-medium"
+                >
+                  Number of packets:
+                </label>
+                <Input
+                  id="packetCount"
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={packetCount}
+                  onChange={(e) => setPacketCount(e.target.value)}
+                  className="w-20 text-center"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={
+                  !Number.isInteger(Number(packetCount)) ||
+                  Number(packetCount) < 1 ||
+                  Number(packetCount) > 50
+                }
+                className="w-full bg-[#3d3833] text-white hover:bg-[#2d2925]"
+              >
+                Submit
+              </Button>
+            </form>
           </>
         )}
 
         {/* ── Uploading phase ──────────────────────────────── */}
         {state.phase === "uploading" && (
-          <div className="flex flex-col items-center gap-4 py-8">
+          <div className="flex flex-col items-center gap-4 px-4 py-12">
             <Loader2 className="size-10 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              Processing your milk packet{Number(packetCount) > 1 ? "s" : ""}...
+              Processing your milk packet
+              {Number(packetCount) > 1 ? "s" : ""}...
             </p>
           </div>
         )}
 
         {/* ── Success phase ────────────────────────────────── */}
         {state.phase === "success" && (
-          <div className="flex flex-col items-center gap-4 py-8">
+          <div className="flex flex-col items-center gap-4 px-4 py-12">
             <CheckCircle2 className="size-10 text-green-500" />
             <p className="text-sm font-medium">
               {Number(packetCount)}{" "}
@@ -166,16 +185,23 @@ export function UploadModal({ file, onClose }: UploadModalProps) {
 
         {/* ── Error phase ──────────────────────────────────── */}
         {state.phase === "error" && (
-          <div className="flex flex-col items-center gap-4 py-4">
+          <div className="flex flex-col items-center gap-4 px-4 py-8">
             <AlertCircle className="size-10 text-destructive" />
             <p className="text-center text-sm text-destructive">
               {state.message}
             </p>
             <div className="flex w-full gap-3">
-              <Button variant="outline" className="flex-1" onClick={handleClose}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleClose}
+              >
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleRetry}>
+              <Button
+                className="flex-1 bg-[#3d3833] text-white hover:bg-[#2d2925]"
+                onClick={handleRetry}
+              >
                 Retry
               </Button>
             </div>

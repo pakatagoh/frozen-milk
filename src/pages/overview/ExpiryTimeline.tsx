@@ -25,23 +25,23 @@ export function ExpiryTimeline({ buckets }: ExpiryTimelineProps) {
       <h2 className="mb-3 text-sm font-semibold text-muted-foreground">
         Expiry Timeline
       </h2>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {buckets.map((b) => {
           const pct = b.maxBags > 0 ? (b.bags / b.maxBags) * 100 : 0;
           return (
-            <div key={b.label} className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs text-muted-foreground">
-                {b.label}
-              </span>
-              <div className="h-4 flex-1 overflow-hidden rounded-full bg-muted">
+            <div key={b.label}>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{b.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {b.bags} bags · {b.ml}ml
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className={`h-full rounded-full ${COLOR_MAP[b.color] || "bg-muted-foreground"}`}
-                  style={{ width: `${Math.max(pct, 4)}%` }}
+                  style={{ width: `${Math.max(pct, b.bags > 0 ? 4 : 0)}%` }}
                 />
               </div>
-              <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
-                {b.bags} bags · {b.ml}ml
-              </span>
             </div>
           );
         })}

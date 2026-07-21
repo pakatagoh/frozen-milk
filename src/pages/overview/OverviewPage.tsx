@@ -76,9 +76,7 @@ export function OverviewPage() {
     }
 
     const maxBags = Math.max(...buckets.map((b) => b.bags), 1);
-    return buckets
-      .filter((b) => b.bags > 0)
-      .map((b) => ({ ...b, maxBags }));
+    return buckets.map((b) => ({ ...b, maxBags }));
   }, [activeEntries]);
 
   // Recent entries: last 3 by date+time descending

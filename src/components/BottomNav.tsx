@@ -28,7 +28,7 @@ export default function BottomNav() {
             <button
               key={item.id}
               type="button"
-              className="relative -mt-6 flex size-14 items-center justify-center rounded-full
+              className="relative -mt-3 flex size-12 items-center justify-center rounded-full
                          bg-primary text-primary-foreground shadow-lg transition-transform
                          active:scale-95"
               aria-label={item.label}

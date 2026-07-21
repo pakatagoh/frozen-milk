@@ -71,3 +71,10 @@ export function formatExpiryDate(dateStr: string): string {
   const d = new Date(2000 + Number(m[3]), idx, Number(m[1]));
   return d.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
 }
+
+/** "16-Oct-26" → "16 Oct 2026" */
+export function formatExpiryShort(dateStr: string): string {
+  const m = dateStr.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
+  if (!m) return dateStr;
+  return `${parseInt(m[1], 10)} ${m[2]} 20${m[3]}`;
+}

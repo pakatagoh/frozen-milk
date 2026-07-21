@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getEntries } from "@/lib/entries-fn";
-import { getExpiryDate, formatExpiryDate } from "@/lib/expiry";
+import { getExpiryDate, formatExpiryShort } from "@/lib/expiry";
 import type { MilkSheetEntry } from "@/lib/sheets";
 import { TotalFrozenCard } from "@/pages/overview/TotalFrozenCard";
 import { StatsGrid } from "@/pages/overview/StatsGrid";
@@ -48,7 +48,7 @@ export function OverviewPage() {
       const d = getExpiryDate(e);
       if (d && (!earliest || d < earliest)) earliest = d;
     }
-    return earliest ? formatExpiryDate(earliest) : null;
+    return earliest ? formatExpiryShort(earliest) : null;
   }, [activeEntries]);
 
   // Expiring soon: active entries where days left ≤ 7

@@ -93,7 +93,7 @@ export function UploadModal({ file, onClose }: UploadModalProps) {
   const showClose = state.phase === "preview" || state.phase === "error";
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && state.phase !== "uploading") handleClose(); }}>
       <DialogContent
         className="max-w-sm gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-lg"
         showCloseButton={false}

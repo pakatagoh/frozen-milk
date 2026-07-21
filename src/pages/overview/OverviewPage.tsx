@@ -92,7 +92,7 @@ export function OverviewPage() {
   }, [entries]);
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6 pb-24">
+    <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
       <TotalFrozenCard totalMl={totalMl} />
       <StatsGrid
         bagCount={bagCount}

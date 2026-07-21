@@ -36,10 +36,12 @@ export function ExpiryTimeline({ buckets }: ExpiryTimelineProps) {
                   {b.bags} bags · {b.ml}ml
                 </span>
               </div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className={`h-full rounded-full ${COLOR_MAP[b.color] || "bg-muted-foreground"}`}
-                  style={{ width: `${Math.max(pct, b.bags > 0 ? 4 : 0)}%` }}
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${
+                    b.bags > 0 ? (COLOR_MAP[b.color] || "bg-muted-foreground") : ""
+                  }`}
+                  style={{ width: `${Math.max(pct, b.bags > 0 ? 5 : 0)}%` }}
                 />
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PeriodSummaryCardProps {
+  title: string;
   subtitle: string;
   added: number;
   used: number;
@@ -8,7 +9,7 @@ interface PeriodSummaryCardProps {
   onNext: () => void;
 }
 
-export function PeriodSummaryCard({ subtitle, added, used, onPrev, onNext }: PeriodSummaryCardProps) {
+export function PeriodSummaryCard({ title, subtitle, added, used, onPrev, onNext }: PeriodSummaryCardProps) {
   const net = added - used;
   const netColor = net >= 0 ? "text-emerald-600" : "text-red-500";
   const netSign = net >= 0 ? "+" : "";
@@ -16,15 +17,16 @@ export function PeriodSummaryCard({ subtitle, added, used, onPrev, onNext }: Per
   return (
     <div className="rounded-xl bg-white px-3 py-3 shadow-sm ring-1 ring-border/50">
       {/* Navigation row */}
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <button onClick={onPrev} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" />
         </button>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
+        <p className="text-xs font-medium">{title}</p>
         <button onClick={onNext} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
           <ChevronRight className="size-4" />
         </button>
       </div>
+      <p className="mb-2 text-center text-[10px] text-muted-foreground">{subtitle}</p>
 
       {/* Stats */}
       <div className="space-y-1">

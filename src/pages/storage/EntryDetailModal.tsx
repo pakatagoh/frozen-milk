@@ -53,6 +53,7 @@ export function EntryDetailModal({ entry, open, onClose }: EntryDetailModalProps
           amount: Number(amount) || 0,
           used,
           usedAt: used ? (entry.usedAt || new Date().toISOString()) : "",
+          totalUsed: used ? entry.packets : 0,
         },
       });
       void queryClient.invalidateQueries({ queryKey: ["entries"] });

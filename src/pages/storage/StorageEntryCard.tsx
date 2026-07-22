@@ -67,13 +67,15 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
       {/* Info */}
       <div className="min-w-0 flex-1">
         <p className="text-base font-medium">{entry.amount}ml</p>
-        {days !== null && (
-          <p className={`text-sm font-medium ${expiryColor(days)}`}>
-            Expires in {days} day{days !== 1 ? "s" : ""}
+        <p className="text-xs text-muted-foreground">Frozen {entry.date}</p>
+        {expiryDate && days !== null && (
+          <p className="text-xs">
+            Expires {expiryDate}
+            {" · "}
+            <span className={`font-medium ${expiryColor(days)}`}>
+              in {days} day{days !== 1 ? "s" : ""}
+            </span>
           </p>
-        )}
-        {expiryDate && (
-          <p className="text-xs text-muted-foreground">Expires {expiryDate}</p>
         )}
       </div>
 

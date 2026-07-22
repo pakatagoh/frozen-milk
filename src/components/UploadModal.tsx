@@ -153,7 +153,7 @@ export function UploadModal({ file, onClose }: UploadModalProps) {
                   Number(packetCount) < 1 ||
                   Number(packetCount) > 50
                 }
-                className="w-full bg-[#3d3833] text-white hover:bg-[#2d2925]"
+                className="w-full bg-[#b07a6a] text-white hover:bg-[#9a6a5d]"
               >
                 Submit
               </Button>
@@ -199,7 +199,7 @@ export function UploadModal({ file, onClose }: UploadModalProps) {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-[#3d3833] text-white hover:bg-[#2d2925]"
+                className="flex-1 bg-[#b07a6a] text-white hover:bg-[#9a6a5d]"
                 onClick={handleRetry}
               >
                 Retry

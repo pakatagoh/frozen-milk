@@ -154,7 +154,7 @@ export function EntryDetailModal({ entry, open, onClose }: EntryDetailModalProps
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="w-full bg-[#3d3833] text-white hover:bg-[#2d2925]"
+            className="w-full bg-[#b07a6a] text-white hover:bg-[#9a6a5d]"
           >
             {saving ? "Saving…" : "Save"}
           </Button>

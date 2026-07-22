@@ -227,7 +227,8 @@ export class GoogleSheetsBackend implements MilkStorageBackend {
     const updatedAt = `'${sgtISO()}`; // always touch on update
     const used = fields.used !== undefined ? fields.used : values[11];
     const usedAt = fields.usedAt !== undefined
-      ? `'${fields.usedAt}` : values[12];
+      ? (fields.usedAt ? `'${fields.usedAt}` : "")
+      : values[12];
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,

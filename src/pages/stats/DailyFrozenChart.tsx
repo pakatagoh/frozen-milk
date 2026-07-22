@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -37,20 +36,6 @@ function CustomTick({ x = 0, y = 0, payload }: CustomTickProps) {
   );
 }
 
-/** Generate evenly-spaced ticks from 0 to max, rounded to nice numbers. */
-function computeTicks(data: DailyData[]): number[] {
-  const max = Math.max(...data.map((d) => d.ml), 0);
-  if (max === 0) return [0, 10];
-  // Round up to nearest "nice" number
-  const niceMax = Math.ceil(max / 10) * 10;
-  const step = Math.ceil(niceMax / 4); // 5 ticks = 4 steps
-  const ticks: number[] = [];
-  for (let i = 0; i <= niceMax; i += step) {
-    ticks.push(i);
-  }
-  return ticks;
-}
-
 interface DailyFrozenChartProps {
   title: string;
   data: DailyData[];
@@ -59,13 +44,6 @@ interface DailyFrozenChartProps {
 }
 
 export function DailyFrozenChart({ title, data, onPrev, onNext }: DailyFrozenChartProps) {
-  const ticks = useMemo(() => computeTicks(data), [data]);
-  // Compute max to set consistent height
-  const domainMax = useMemo(() => {
-    const max = Math.max(...data.map((d) => d.ml), 0);
-    return Math.ceil(max / 10) * 10 || 10;
-  }, [data]);
-
   return (
     <div className="rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-border/50">
       <div className="mb-3 flex items-center justify-between">
@@ -80,7 +58,7 @@ export function DailyFrozenChart({ title, data, onPrev, onNext }: DailyFrozenCha
 
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 4, right: 0, left: -20, bottom: 4 }}>
+          <BarChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
             <XAxis
               dataKey="label"
@@ -90,13 +68,10 @@ export function DailyFrozenChart({ title, data, onPrev, onNext }: DailyFrozenCha
               tickLine={false}
             />
             <YAxis
-              type="number"
-              domain={[0, domainMax]}
-              ticks={ticks}
               tick={{ fontSize: 10, fill: "#9ca3af" }}
               axisLine={false}
               tickLine={false}
-              width={40}
+              width={45}
             />
             <Tooltip
               contentStyle={{

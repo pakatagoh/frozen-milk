@@ -10,16 +10,16 @@ interface ExpiryTimelineProps {
   buckets: TimelineBucket[];
 }
 
-/** Generate a lighter shade of the dark rose using color-mix() */
+/** Generate a lighter shade of the primary rose using color-mix() */
 function shade(lightness: number): string {
-  return `color-mix(in srgb, #965060, white ${lightness}%)`;
+  return `color-mix(in srgb, hsl(var(--primary)), white ${lightness}%)`;
 }
 
 const URGENCY_SHADE: Record<string, number> = {
-  red: 0,    // ≤1 week: pure rose — most urgent
+  red: 0,    // ≤1 week: pure primary — most urgent
   orange: 7,  // 1-2 weeks
   amber: 14,  // 2-4 weeks
-  green: 21,  // 1-3 months: lightest (WCAG 3.02 vs track)
+  green: 21,  // 1-3 months: lightest
 };
 
 export function ExpiryTimeline({ buckets }: ExpiryTimelineProps) {

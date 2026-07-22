@@ -135,21 +135,17 @@ export function EntryDetailModal({ entry, open, onClose }: EntryDetailModalProps
           )}
 
           {/* Mark as Used */}
-          {entry.used ? (
-            <p className="text-sm text-muted-foreground">
-              Used on {entry.usedAt ? new Date(entry.usedAt).toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" }) : "—"}
-            </p>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id={`used-${entry.id}`}
-                checked={used}
-                onCheckedChange={(c) => setUsed(!!c)}
-                className="size-5"
-              />
-              <label htmlFor={`used-${entry.id}`} className="text-sm">Mark as Used</label>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`used-${entry.id}`}
+              checked={used}
+              onCheckedChange={(c) => setUsed(!!c)}
+              className="size-5"
+            />
+            <label htmlFor={`used-${entry.id}`} className="text-sm">
+              Mark as Used
+            </label>
+          </div>
         </div>
 
         {/* Save */}

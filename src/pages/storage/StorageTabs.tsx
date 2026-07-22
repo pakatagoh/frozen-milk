@@ -30,8 +30,8 @@ export function StorageTabs({ activeTab, onTabChange, totalCount, frozenCount, u
           onClick={() => onTabChange(tab.id)}
           className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === tab.id
-              ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-gray-300 bg-transparent text-gray-500 hover:border-gray-400 hover:text-gray-700"
+              ? "border-[#f9e4db] bg-[#f9e4db] text-[#3d2e28]"
+              : "border-gray-300 bg-transparent text-gray-500 hover:border-gray-400 hover:text-gray-800"
           }`}
         >
           {tab.label} ({counts[tab.id]})

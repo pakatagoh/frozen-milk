@@ -62,7 +62,7 @@ export function MonthlyFrozenChart({ title, data, onPrev, onNext }: MonthlyFroze
             />
             <Bar
               dataKey="ml"
-              fill="#60a5fa"
+              fill="#c07d8e"
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
             />

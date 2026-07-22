@@ -84,7 +84,7 @@ export function DailyFrozenChart({ title, data, onPrev, onNext }: DailyFrozenCha
             />
             <Bar
               dataKey="ml"
-              fill="#34d399"
+              fill="#c07d8e"
               radius={[4, 4, 0, 0]}
               maxBarSize={32}
             />

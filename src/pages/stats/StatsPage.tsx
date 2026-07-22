@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getEntries } from "@/lib/entries-fn";
 import { PeriodSummaryCard } from "@/pages/stats/PeriodSummaryCard";
@@ -11,25 +11,38 @@ function parseSheetDate(s: string): number {
   return d.getTime();
 }
 
-/** Check if a timestamp falls within the current week (Mon–Sun in SG time). */
-function isThisWeek(ts: number): boolean {
+/** Get Monday 00:00 of the week `offset` weeks from now (0 = current, -1 = last week). */
+function getWeekMonday(offset: number): Date {
   const now = new Date();
   const monday = new Date(now);
   monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() + offset * 7);
+  return monday;
+}
+
+/** Check if timestamp falls within a specific week. */
+function isInWeek(ts: number, monday: Date): boolean {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
   return ts >= monday.getTime() && ts <= sunday.getTime();
 }
 
-/** Check if a timestamp falls within the current month. */
-function isThisMonth(ts: number): boolean {
+/** Get the first day of the month `offset` months from now. */
+function getMonthStart(offset: number): Date {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const date = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return date;
+}
+
+/** Check if timestamp falls within a specific month. */
+function isInMonth(ts: number, start: Date): boolean {
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
   return ts >= start.getTime() && ts <= end.getTime();
 }
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export function StatsPage() {
   const { data: entries = [] } = useQuery({
@@ -37,37 +50,50 @@ export function StatsPage() {
     queryFn: () => getEntries(),
   });
 
-  // ── Period summaries ─────────────────────────────────────────
-  const { weekAdded, weekUsed, monthAdded, monthUsed } = useMemo(() => {
-    let weekAdded = 0, weekUsed = 0, monthAdded = 0, monthUsed = 0;
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
 
+  const weekMonday = useMemo(() => getWeekMonday(weekOffset), [weekOffset]);
+  const monthStart = useMemo(() => getMonthStart(monthOffset), [monthOffset]);
+
+  // ── Week period ──────────────────────────────────────────────
+  const { weekAdded, weekUsed } = useMemo(() => {
+    let added = 0, used = 0;
     for (const e of entries) {
       const freezeMs = parseSheetDate(e.date);
-      if (!Number.isNaN(freezeMs)) {
-        if (isThisWeek(freezeMs)) weekAdded += e.amount;
-        if (isThisMonth(freezeMs)) monthAdded += e.amount;
+      if (!Number.isNaN(freezeMs) && isInWeek(freezeMs, weekMonday)) {
+        added += e.amount;
       }
-
       if (e.used && e.usedAt) {
         const usedMs = Date.parse(e.usedAt);
-        if (!Number.isNaN(usedMs)) {
-          if (isThisWeek(usedMs)) weekUsed += e.amount;
-          if (isThisMonth(usedMs)) monthUsed += e.amount;
+        if (!Number.isNaN(usedMs) && isInWeek(usedMs, weekMonday)) {
+          used += e.amount;
         }
       }
     }
+    return { weekAdded: added, weekUsed: used };
+  }, [entries, weekMonday]);
 
-    return { weekAdded, weekUsed, monthAdded, monthUsed };
-  }, [entries]);
+  // ── Month period ─────────────────────────────────────────────
+  const { monthAdded, monthUsed } = useMemo(() => {
+    let added = 0, used = 0;
+    for (const e of entries) {
+      const freezeMs = parseSheetDate(e.date);
+      if (!Number.isNaN(freezeMs) && isInMonth(freezeMs, monthStart)) {
+        added += e.amount;
+      }
+      if (e.used && e.usedAt) {
+        const usedMs = Date.parse(e.usedAt);
+        if (!Number.isNaN(usedMs) && isInMonth(usedMs, monthStart)) {
+          used += e.amount;
+        }
+      }
+    }
+    return { monthAdded: added, monthUsed: used };
+  }, [entries, monthStart]);
 
-  // ── Daily frozen (last 7 days Mon–Sun) ──────────────────────
+  // ── Daily frozen (for selected week) ─────────────────────────
   const dailyData = useMemo(() => {
-    const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
-
     const daily: Record<string, number> = {};
     for (const day of DAYS) daily[day] = 0;
 
@@ -75,61 +101,85 @@ export function StatsPage() {
       const freezeMs = parseSheetDate(e.date);
       if (Number.isNaN(freezeMs)) continue;
       const d = new Date(freezeMs);
-      // Only count if this week
-      if (d.getTime() >= monday.getTime()) {
-        const dayIdx = (d.getDay() + 6) % 7; // Sun=6, Mon=0
-        daily[DAYS[dayIdx]] += e.amount;
+      if (d.getTime() >= weekMonday.getTime()) {
+        const dayIdx = (d.getDay() + 6) % 7;
+        if (dayIdx >= 0 && dayIdx < 7) {
+          const weekSun = new Date(weekMonday);
+          weekSun.setDate(weekMonday.getDate() + 6);
+          weekSun.setHours(23, 59, 59, 999);
+          if (d.getTime() <= weekSun.getTime()) {
+            daily[DAYS[dayIdx]] += e.amount;
+          }
+        }
       }
     }
 
     return DAYS.map((day, i) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + i);
+      const date = new Date(weekMonday);
+      date.setDate(weekMonday.getDate() + i);
       const label = `${day} ${date.getDate()}/${date.getMonth() + 1}`;
       return { day, label, ml: daily[day] };
     });
-  }, [entries]);
+  }, [entries, weekMonday]);
 
   // ── Date range labels ───────────────────────────────────────
   const weekLabel = useMemo(() => {
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    const sun = new Date(monday);
-    sun.setDate(monday.getDate() + 6);
-
+    const sun = new Date(weekMonday);
+    sun.setDate(weekMonday.getDate() + 6);
     const fmt = (d: Date) =>
       d.toLocaleDateString("en-SG", { day: "numeric", month: "short" });
-    return `${fmt(monday)} – ${fmt(sun)}`;
-  }, []);
+    return `${fmt(weekMonday)} – ${fmt(sun)}`;
+  }, [weekMonday]);
 
   const monthLabel = useMemo(() => {
-    const now = new Date();
-    return now.toLocaleDateString("en-SG", { month: "short", year: "numeric" });
-  }, []);
+    return monthStart.toLocaleDateString("en-SG", { month: "short", year: "numeric" });
+  }, [monthStart]);
+
+  const chartTitle = useMemo(() => {
+    const sun = new Date(weekMonday);
+    sun.setDate(weekMonday.getDate() + 6);
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("en-SG", { day: "numeric", month: "short" });
+    return `Daily Frozen · ${fmt(weekMonday)} – ${fmt(sun)}`;
+  }, [weekMonday]);
+
+  // ── Navigation callbacks ────────────────────────────────────
+  const prevWeek = useCallback(() => setWeekOffset((o) => o - 1), []);
+  const nextWeek = useCallback(() => setWeekOffset((o) => o + 1), []);
+  const prevMonth = useCallback(() => setMonthOffset((o) => o - 1), []);
+  const nextMonth = useCallback(() => setMonthOffset((o) => o + 1), []);
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
-      <h1 className="text-2xl font-bold">📊 Stats</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">📊 Stats</h1>
+      </div>
 
       {/* Period cards */}
       <div className="grid grid-cols-2 gap-3">
         <PeriodSummaryCard
-          title="This Week"
           subtitle={weekLabel}
           added={weekAdded}
           used={weekUsed}
+          onPrev={prevWeek}
+          onNext={nextWeek}
         />
         <PeriodSummaryCard
-          title="This Month"
           subtitle={monthLabel}
           added={monthAdded}
           used={monthUsed}
+          onPrev={prevMonth}
+          onNext={nextMonth}
         />
       </div>
 
       {/* Daily chart */}
-      <DailyFrozenChart data={dailyData} />
+      <DailyFrozenChart
+        title={chartTitle}
+        data={dailyData}
+        onPrev={prevWeek}
+        onNext={nextWeek}
+      />
     </main>
   );
 }

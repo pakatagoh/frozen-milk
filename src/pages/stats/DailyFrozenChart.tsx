@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DailyData {
   day: string;
@@ -36,13 +37,26 @@ function CustomTick({ x = 0, y = 0, payload }: CustomTickProps) {
 }
 
 interface DailyFrozenChartProps {
+  title: string;
   data: DailyData[];
+  onPrev: () => void;
+  onNext: () => void;
 }
 
-export function DailyFrozenChart({ data }: DailyFrozenChartProps) {
+export function DailyFrozenChart({ title, data, onPrev, onNext }: DailyFrozenChartProps) {
   return (
     <div className="rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-border/50">
-      <p className="mb-3 text-sm font-medium">Daily Frozen (ml)</p>
+      {/* Title + navigation */}
+      <div className="mb-3 flex items-center justify-between">
+        <button onClick={onPrev} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="size-4" />
+        </button>
+        <p className="text-sm font-medium">{title}</p>
+        <button onClick={onNext} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
+          <ChevronRight className="size-4" />
+        </button>
+      </div>
+
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 0, left: -20, bottom: 4 }}>

@@ -1,5 +1,6 @@
 import type { MilkSheetEntry } from "@/lib/sheets";
 import { getExpiryDate } from "@/lib/expiry";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface StorageEntryCardProps {
   entry: MilkSheetEntry;
@@ -76,18 +77,18 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
         )}
       </div>
 
-      {/* Checkbox — only for non-used entries */}
+      {/* Checkbox — only for non-used entries, with generous touch target */}
       {!isUsed && (
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
+        <div
+          className="flex shrink-0 items-center justify-center p-2 -m-2"
           onClick={(e) => e.stopPropagation()}
-          className="size-4 shrink-0 rounded accent-primary"
-        />
+        >
+          <Checkbox
+            checked={checked}
+            onCheckedChange={() => onToggle()}
+            className="size-5"
+          />
+        </div>
       )}
     </div>
   );

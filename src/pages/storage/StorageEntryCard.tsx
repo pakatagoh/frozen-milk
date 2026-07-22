@@ -39,7 +39,7 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
       className={`flex cursor-pointer items-center gap-3 rounded-lg border border-l-4 p-3 transition-colors ${
         checked ? "bg-accent" : "bg-card hover:bg-accent/50"
       } ${
-        isUsed ? "border-l-gray-300" : "border-l-sky-500"
+        isUsed ? "border-l-muted" : "border-l-primary"
       }`}
       onClick={onOpenDetail}
     >

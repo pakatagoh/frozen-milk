@@ -59,7 +59,7 @@ export default function BottomNav({ onFileSelected }: BottomNavProps) {
               type="button"
               onClick={handleAddClick}
               className="relative -mt-3 flex size-12 items-center justify-center rounded-full
-                         bg-[#b07a6a] text-white shadow-lg transition-transform
+                         bg-primary text-primary-foreground shadow-lg transition-transform
                          active:scale-95"
               aria-label={item.label}
             >
@@ -72,7 +72,7 @@ export default function BottomNav({ onFileSelected }: BottomNavProps) {
               className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5
                          py-1 transition-colors ${
                            isActive(item.to)
-                             ? "text-[#b07a6a]"
+                             ? "text-primary"
                              : "text-muted-foreground"
                          }`}
               aria-label={item.label}

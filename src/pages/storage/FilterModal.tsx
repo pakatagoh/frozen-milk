@@ -113,7 +113,7 @@ export function FilterModal({ open, onClose, filter, onApply }: FilterModalProps
             Clear All
           </Button>
           <Button
-            className="flex-1 bg-[#b07a6a] text-white hover:bg-[#9a6a5d]"
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/80"
             onClick={() => {
               onApply(draft);
               onClose();

@@ -261,7 +261,7 @@ export function EntryCard({ entry }: EntryCardProps) {
             <Button
               type="submit"
               disabled={saving}
-              className="w-full bg-[#b07a6a] text-white hover:bg-[#9a6a5d]"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/80"
             >
               Save changes
             </Button>

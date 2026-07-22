@@ -4,15 +4,15 @@ interface TotalFrozenCardProps {
 
 export function TotalFrozenCard({ totalMl }: TotalFrozenCardProps) {
   return (
-    <div className="rounded-2xl bg-[#f9e4db] px-6 py-6">
+    <div className="rounded-2xl bg-muted px-6 py-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-[#b07a6a]">Total Frozen Milk</p>
-          <p className="mt-1 text-4xl font-bold tracking-tight text-[#3d2e28]">
+          <p className="text-sm font-medium text-primary">Total Frozen Milk</p>
+          <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">
             {totalMl.toLocaleString()} ml
           </p>
         </div>
-        {/* Milk bag icon — simple SVG */}
+        {/* Milk bag icon */}
         <svg
           width="56"
           height="72"

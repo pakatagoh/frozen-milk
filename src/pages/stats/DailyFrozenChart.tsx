@@ -69,6 +69,10 @@ export function DailyFrozenChart({ title, data, onPrev, onNext }: DailyFrozenCha
               tickLine={false}
             />
             <YAxis
+              type="number"
+              domain={[0, "dataMax"]}
+              tickCount={5}
+              allowDecimals={false}
               tick={{ fontSize: 10, fill: "#9ca3af" }}
               axisLine={false}
               tickLine={false}

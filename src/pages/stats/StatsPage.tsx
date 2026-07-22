@@ -82,7 +82,12 @@ export function StatsPage() {
       }
     }
 
-    return DAYS.map((day) => ({ day, ml: daily[day] }));
+    return DAYS.map((day, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      const label = `${day} ${date.getDate()}/${date.getMonth() + 1}`;
+      return { day, label, ml: daily[day] };
+    });
   }, [entries]);
 
   // ── Date range labels ───────────────────────────────────────

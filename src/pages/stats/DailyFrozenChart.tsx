@@ -10,6 +10,7 @@ import {
 
 interface DailyData {
   day: string;
+  label: string;
   ml: number;
 }
 
@@ -26,7 +27,7 @@ export function DailyFrozenChart({ data }: DailyFrozenChartProps) {
           <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
             <XAxis
-              dataKey="day"
+              dataKey="label"
               tick={{ fontSize: 11, fill: "#9ca3af" }}
               axisLine={false}
               tickLine={false}

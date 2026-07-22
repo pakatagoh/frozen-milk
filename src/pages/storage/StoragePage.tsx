@@ -146,7 +146,7 @@ export function StoragePage() {
       />
 
       {/* Sort + Filter row */}
-      <div className="mt-3 flex items-center justify-end gap-2">
+      <div className="mt-3 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setSortAsc((prev) => !prev)}

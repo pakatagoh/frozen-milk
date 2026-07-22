@@ -19,7 +19,7 @@ function StatBox({
       style={{ flex: span }}
     >
       <p className="text-center text-base font-bold leading-tight">{value}</p>
-      <p className="mt-0.5 text-center text-[11px] leading-tight text-muted-foreground">
+      <p className="mt-0.5 text-center text-[11px] leading-tight">
         {label}
       </p>
     </div>

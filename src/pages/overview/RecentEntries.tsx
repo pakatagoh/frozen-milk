@@ -10,7 +10,7 @@ export function RecentEntries({ entries }: RecentEntriesProps) {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-muted-foreground">
+      <h2 className="mb-3 text-sm font-semibold">
         Recent Entries
       </h2>
       <div className="space-y-2">

@@ -27,7 +27,7 @@ export function ExpiryTimeline({ buckets }: ExpiryTimelineProps) {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-muted-foreground">
+      <h2 className="mb-3 text-sm font-semibold">
         Expiry Timeline
       </h2>
       <div className="space-y-3">
@@ -36,8 +36,8 @@ export function ExpiryTimeline({ buckets }: ExpiryTimelineProps) {
           return (
             <div key={b.label}>
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{b.label}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs">{b.label}</span>
+                <span className="text-xs">
                   {b.bags} bags · {b.ml}ml
                 </span>
               </div>

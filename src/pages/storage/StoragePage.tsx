@@ -4,15 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { getEntries } from "@/lib/entries-fn";
 import { updateEntry } from "@/lib/update-entry-fn";
 import type { MilkSheetEntry } from "@/lib/sheets";
-import { SlidersHorizontal, ArrowUpDown, ChevronDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { SlidersHorizontal } from "lucide-react";
+import { SortDropdown, type SortKey } from "@/pages/storage/SortDropdown";
 import { StorageTabs } from "@/pages/storage/StorageTabs";
 import { StorageEntryCard } from "@/pages/storage/StorageEntryCard";
 import { BatchActionBar } from "@/pages/storage/BatchActionBar";
@@ -20,14 +13,6 @@ import { FilterModal, type FilterState, type NumOp } from "@/pages/storage/Filte
 import { EntryDetailModal } from "@/pages/storage/EntryDetailModal";
 
 type TabId = "all" | "frozen" | "used";
-type SortKey = "newest" | "oldest" | "largest" | "least";
-
-const SORT_LABELS: Record<SortKey, string> = {
-  newest: "Newest first",
-  oldest: "Oldest first",
-  largest: "Largest amount",
-  least: "Least amount",
-};
 
 function parseSheetDate(s: string): number {
   const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
@@ -174,30 +159,7 @@ export function StoragePage() {
 
       {/* Sort + Filter row */}
       <div className="flex items-center justify-between gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ArrowUpDown className="size-3.5" />
-              {SORT_LABELS[sortKey]}
-              <ChevronDown className="size-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-44">
-            <DropdownMenuRadioGroup
-              value={sortKey}
-              onValueChange={(v) => setSortKey(v as SortKey)}
-            >
-              <DropdownMenuRadioItem value="newest">Newest first</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="oldest">Oldest first</DropdownMenuRadioItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioItem value="largest">Largest amount</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="least">Least amount</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SortDropdown sortKey={sortKey} onSortChange={setSortKey} />
         <button
           type="button"
           onClick={() => setFilterOpen(true)}

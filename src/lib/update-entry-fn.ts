@@ -9,6 +9,8 @@ const UpdateEntrySchema = z.object({
   packets: z.number().int().positive().optional(),
   totalUsed: z.number().int().min(0).optional(),
   notes: z.string().optional(),
+  used: z.boolean().optional(),
+  usedAt: z.string().optional(),
 });
 
 export const updateEntry = createServerFn({ method: "POST" })

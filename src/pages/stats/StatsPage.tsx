@@ -158,7 +158,7 @@ export function StatsPage() {
       {/* Period cards */}
       <div className="grid grid-cols-2 gap-3">
         <PeriodSummaryCard
-          title="This Week"
+          title="Week"
           subtitle={weekLabel}
           added={weekAdded}
           used={weekUsed}
@@ -166,7 +166,7 @@ export function StatsPage() {
           onNext={nextWeek}
         />
         <PeriodSummaryCard
-          title="This Month"
+          title="Month"
           subtitle={monthLabel}
           added={monthAdded}
           used={monthUsed}

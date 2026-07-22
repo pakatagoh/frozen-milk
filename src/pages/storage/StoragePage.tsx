@@ -1,244 +1,217 @@
-import { useRef, useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Button } from "@/components/ui/button";
-import { uploadMilk } from "@/lib/upload-fn";
 import { getEntries } from "@/lib/entries-fn";
+import { updateEntry } from "@/lib/update-entry-fn";
+import { getExpiryDate } from "@/lib/expiry";
 import type { MilkSheetEntry } from "@/lib/sheets";
-import { ArrowUpDown } from "lucide-react";
-import { SnapMilkPacketButton } from "@/components/SnapMilkPacketButton";
-import { PendingUploadList, type PendingEntry } from "@/components/PendingUploadList";
-import { EntryCard } from "@/components/EntryCard";
-import {
-  StatusFilterChips,
-  type EntryFilter,
-} from "@/components/StatusFilterChips";
-import {
-  AdvancedFilters,
-  type NumOp,
-} from "@/components/AdvancedFilters";
-import { StorageSummary } from "@/components/StorageSummary";
+import { SlidersHorizontal } from "lucide-react";
+import { StorageTabs } from "@/pages/storage/StorageTabs";
+import { StorageEntryCard } from "@/pages/storage/StorageEntryCard";
+import { BatchActionBar } from "@/pages/storage/BatchActionBar";
+import { FilterModal, type FilterState, type NumOp } from "@/pages/storage/FilterModal";
+
+type TabId = "all" | "frozen" | "used";
+type SortBy = "expiry" | "date";
+
+function parseSheetDate(s: string): number {
+  const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
+  if (!m) return NaN;
+  const d = new Date(`${m[2]} ${m[1]}, 20${m[3]}`);
+  return d.getTime();
+}
+
+function entryTimestamp(e: MilkSheetEntry): number {
+  const dateMs = parseSheetDate(e.date);
+  if (Number.isNaN(dateMs)) return 0;
+  const [h = "0", m = "0"] = (e.time || "").split(":");
+  return dateMs + Number(h) * 3_600_000 + Number(m) * 60_000;
+}
+
+function expiryTimestamp(e: MilkSheetEntry): number {
+  const d = getExpiryDate(e);
+  if (!d) return Infinity;
+  return parseSheetDate(d);
+}
+
+function matchesNumFilter(value: number, op: NumOp, raw: string): boolean {
+  if (raw === "") return true;
+  const target = Number(raw);
+  if (Number.isNaN(target)) return true;
+  if (op === "eq") return value === target;
+  if (op === "gte") return value >= target;
+  return value <= target;
+}
+
+const defaultFilter: FilterState = {
+  dateStart: "",
+  dateEnd: "",
+  amountOp: "eq",
+  amountVal: "",
+};
 
 export function StoragePage() {
   const queryClient = useQueryClient();
-  const { data: savedEntries = [], error: loadError } = useQuery({
+  const updateFn = useServerFn(updateEntry);
+
+  const { data: entries = [], error: loadError } = useQuery({
     queryKey: ["entries"],
     queryFn: () => getEntries(),
   });
 
-  const [pending, setPending] = useState<PendingEntry[]>([]);
-  const filesRef = useRef<Map<string, File>>(new Map());
-  const uploadMilkFn = useServerFn(uploadMilk);
+  const [activeTab, setActiveTab] = useState<TabId>("frozen");
+  const [sortBy, setSortBy] = useState<SortBy>("expiry");
+  const [filter, setFilter] = useState<FilterState>(defaultFilter);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
 
-  function handleFile(file: File) {
-    const id = crypto.randomUUID();
-    filesRef.current.set(id, file);
-    const previewUrl = URL.createObjectURL(file);
-    setPending((prev) => [{ id, previewUrl, status: "processing" }, ...prev]);
-    void runUpload(id, file);
-  }
+  // ── Derived counts ────────────────────────────────────────────
+  const frozenCount = useMemo(
+    () => entries.filter((e) => !e.used).length,
+    [entries],
+  );
+  const usedCount = useMemo(
+    () => entries.filter((e) => e.used).length,
+    [entries],
+  );
 
-  function retry(id: string) {
-    const file = filesRef.current.get(id);
-    if (!file) return;
-    setPending((prev) =>
-      prev.map((e) =>
-        e.id === id ? { ...e, status: "processing", error: undefined } : e,
-      ),
-    );
-    void runUpload(id, file);
-  }
+  // ── Tab filter ────────────────────────────────────────────────
+  const tabbedEntries = useMemo(() => {
+    if (activeTab === "frozen") return entries.filter((e) => !e.used);
+    if (activeTab === "used") return entries.filter((e) => e.used);
+    return entries;
+  }, [entries, activeTab]);
 
-  function dismiss(id: string) {
-    setPending((prev) => prev.filter((e) => e.id !== id));
-    filesRef.current.delete(id);
-  }
+  // ── Custom filter (date + amount) ─────────────────────────────
+  const filteredEntries = useMemo(() => {
+    return tabbedEntries.filter((e) => {
+      if (filter.dateStart) {
+        const ts = parseSheetDate(e.date);
+        const start = Date.parse(filter.dateStart + "T00:00:00");
+        if (!Number.isNaN(ts) && ts < start) return false;
+      }
+      if (filter.dateEnd) {
+        const ts = parseSheetDate(e.date);
+        const end = Date.parse(filter.dateEnd + "T00:00:00") + 86_399_999;
+        if (!Number.isNaN(ts) && ts > end) return false;
+      }
+      if (!matchesNumFilter(e.amount, filter.amountOp, filter.amountVal)) return false;
+      return true;
+    });
+  }, [tabbedEntries, filter]);
 
-  async function runUpload(id: string, file: File) {
-    const form = new FormData();
-    form.append("image", file);
+  // ── Sort ──────────────────────────────────────────────────────
+  const sortedEntries = useMemo(() => {
+    const sorted = [...filteredEntries].sort((a, b) => {
+      if (sortBy === "expiry") return expiryTimestamp(a) - expiryTimestamp(b);
+      return entryTimestamp(a) - entryTimestamp(b);
+    });
+    return sorted;
+  }, [filteredEntries, sortBy]);
+
+  // ── Selection ─────────────────────────────────────────────────
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleMarkUsed = async () => {
+    if (selectedIds.size === 0) return;
+    setBusy(true);
     try {
-      const { id: serverId, result, srcSetThumb } = await uploadMilkFn({ data: form });
-      setPending((prev) =>
-        prev.map((e) =>
-          e.id === id ? { ...e, id: serverId, status: "done", result, srcSetThumb } : e,
+      const targets = entries.filter((e) => selectedIds.has(e.id) && e.rowIndex);
+      await Promise.all(
+        targets.map((e) =>
+          updateFn({ data: { rowIndex: e.rowIndex!, used: true, totalUsed: e.packets } }),
         ),
       );
       void queryClient.invalidateQueries({ queryKey: ["entries"] });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Upload failed";
-      setPending((prev) =>
-        prev.map((e) =>
-          e.id === id ? { ...e, status: "error", error: msg } : e,
-        ),
-      );
+      setSelectedIds(new Set());
+    } finally {
+      setBusy(false);
     }
-  }
-
-  // ── Filters ─────────────────────────────────────────────────────
-  const [sortAsc, setSortAsc] = useState(true);
-  const [filter, setFilter] = useState<EntryFilter>("active");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const [dateStart, setDateStart] = useState("");
-  const [dateEnd, setDateEnd] = useState("");
-
-  const [amountOp, setAmountOp] = useState<NumOp>("eq");
-  const [amountVal, setAmountVal] = useState("");
-
-  const [packetsOp, setPacketsOp] = useState<NumOp>("eq");
-  const [packetsVal, setPacketsVal] = useState("");
-
-  // ── Date helpers ─────────────────────────────────────────────────
-  const parseSheetDate = (s: string): number => {
-    const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
-    if (!m) return NaN;
-    const d = new Date(`${m[2]} ${m[1]}, 20${m[3]}`);
-    return d.getTime();
   };
 
-  const parsePickerDate = (s: string): number => {
-    if (!s) return NaN;
-    const d = new Date(s + "T00:00:00");
-    return d.getTime();
-  };
-
-  const matchesNumFilter = (value: number, op: NumOp, raw: string): boolean => {
-    if (raw === "") return true;
-    const target = Number(raw);
-    if (Number.isNaN(target)) return true;
-    if (op === "eq") return value === target;
-    if (op === "gte") return value >= target;
-    return value <= target;
-  };
-
-  const filteredEntries = useMemo(() => {
-    return savedEntries.filter((e) => {
-      if (filter === "completed" && e.totalUsed !== e.packets) return false;
-      if (filter === "active" && e.totalUsed >= e.packets) return false;
-
-      if (dateStart) {
-        const ts = parseSheetDate(e.date);
-        if (!Number.isNaN(ts) && ts < parsePickerDate(dateStart)) return false;
-      }
-      if (dateEnd) {
-        const ts = parseSheetDate(e.date);
-        if (!Number.isNaN(ts) && ts > parsePickerDate(dateEnd) + 86_399_999) return false;
-      }
-
-      if (!matchesNumFilter(e.amount, amountOp, amountVal)) return false;
-      if (!matchesNumFilter(e.packets, packetsOp, packetsVal)) return false;
-
-      return true;
-    });
-  }, [
-    savedEntries,
-    filter,
-    dateStart,
-    dateEnd,
-    amountOp,
-    amountVal,
-    packetsOp,
-    packetsVal,
-  ]);
-
-  // ── Sort by parsed date + time ─────────────────────────────────
-  const entryTimestamp = (e: MilkSheetEntry): number => {
-    const dateMs = parseSheetDate(e.date);
-    if (Number.isNaN(dateMs)) return 0;
-    const [h = "0", m = "0"] = e.time.split(":");
-    return dateMs + Number(h) * 3_600_000 + Number(m) * 60_000;
-  };
-
-  const sortedEntries = useMemo(() => {
-    const sorted = [...filteredEntries].sort(
-      (a, b) => entryTimestamp(a) - entryTimestamp(b),
-    );
-    return sortAsc ? sorted : sorted.reverse();
-  }, [filteredEntries, sortAsc]);
-
-  // ── Render ──────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">📦 Storage</h1>
+      <h1 className="mb-4 text-2xl font-bold">My Frozen Milk</h1>
 
-      <SnapMilkPacketButton onFile={handleFile} />
-
-      <PendingUploadList pending={pending} onRetry={retry} onDismiss={dismiss} />
-
-      {/* ── Saved entries header ─────────────────────────────────── */}
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground">
-          Saved packets
-        </h2>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
-            onClick={() => setSortAsc((prev) => !prev)}
-          >
-            <ArrowUpDown className="mr-1 h-3 w-3" />
-            {sortAsc ? "Oldest first" : "Newest first"}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {sortedEntries.length}
-            {filter !== "all" && ` / ${savedEntries.length}`}
-          </span>
-        </div>
-      </div>
-
-      <StatusFilterChips
-        filter={filter}
-        onFilterChange={setFilter}
-        filtersOpen={filtersOpen}
-        onToggleFilters={() => setFiltersOpen((p) => !p)}
+      {/* Tabs */}
+      <StorageTabs
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setSelectedIds(new Set());
+        }}
+        totalCount={entries.length}
+        frozenCount={frozenCount}
+        usedCount={usedCount}
       />
 
-      {filtersOpen && (
-        <AdvancedFilters
-          dateStart={dateStart}
-          dateEnd={dateEnd}
-          onDateStartChange={setDateStart}
-          onDateEndChange={setDateEnd}
-          amountOp={amountOp}
-          amountVal={amountVal}
-          onAmountOpChange={setAmountOp}
-          onAmountValChange={setAmountVal}
-          packetsOp={packetsOp}
-          packetsVal={packetsVal}
-          onPacketsOpChange={setPacketsOp}
-          onPacketsValChange={setPacketsVal}
-          onClear={() => {
-            setDateStart("");
-            setDateEnd("");
-            setAmountVal("");
-            setPacketsVal("");
-          }}
-        />
-      )}
+      {/* Sort + Filter row */}
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <span>Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="bg-transparent font-medium text-foreground outline-none"
+          >
+            <option value="expiry">Expiry Date (Soonest)</option>
+            <option value="date">Date (Newest)</option>
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={() => setFilterOpen(true)}
+          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors ${
+            filter.dateStart || filter.dateEnd || filter.amountVal
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <SlidersHorizontal className="size-4" />
+          Filters
+        </button>
+      </div>
 
-      <StorageSummary entries={filteredEntries} />
-
-      {/* ── Entry list ───────────────────────────────────────────── */}
-      {loadError ? (
-        <p className="text-center text-sm text-red-600">
-          Couldn't load packets from the sheet.
-        </p>
-      ) : sortedEntries.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground">
-          No packets in the sheet yet.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {sortedEntries.map((entry: MilkSheetEntry) => (
-            <EntryCard
+      {/* Entry list */}
+      <div className="mt-3 flex flex-col gap-2">
+        {loadError ? (
+          <p className="py-8 text-center text-sm text-red-600">Couldn't load entries.</p>
+        ) : sortedEntries.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">No entries found.</p>
+        ) : (
+          sortedEntries.map((entry) => (
+            <StorageEntryCard
               key={entry.id}
               entry={entry}
+              checked={selectedIds.has(entry.id)}
+              onToggle={() => toggleSelect(entry.id)}
+              onOpenDetail={() => {
+                // Open EntryCard modal — reuse existing EntryCard pattern
+              }}
             />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
+
+      {/* Batch action bar */}
+      <BatchActionBar selectedCount={selectedIds.size} onMarkUsed={handleMarkUsed} busy={busy} />
+
+      {/* Filter modal */}
+      <FilterModal
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filter={filter}
+        onApply={setFilter}
+      />
     </main>
   );
 }

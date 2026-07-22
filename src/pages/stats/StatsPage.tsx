@@ -160,24 +160,33 @@ export function StatsPage() {
     const monthly: Record<string, number> = {};
     for (let i = 0; i < 6; i++) {
       const mIdx = (halfStartMonth + i + 12) % 12;
+      monthly[MONTHS[mIdx]] = 0;
+    }
+
+    // Map for matching: "Jan" → [2026], "Feb" → [2026], etc.
+    const monthYears: Record<string, number> = {};
+    for (let i = 0; i < 6; i++) {
+      const mIdx = (halfStartMonth + i + 12) % 12;
       const mYear = halfYear + Math.floor((halfStartMonth + i) / 12);
-      monthly[`${MONTHS[mIdx]} ${mYear}`] = 0;
+      monthYears[MONTHS[mIdx]] = mYear;
     }
 
     for (const e of entries) {
       const freezeMs = parseSheetDate(e.date);
       if (Number.isNaN(freezeMs)) continue;
       const d = new Date(freezeMs);
-      const key = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-      if (monthly[key] !== undefined) {
-        monthly[key] += e.amount;
+      const mName = MONTHS[d.getMonth()];
+      if (monthYears[mName] === d.getFullYear()) {
+        monthly[mName] = (monthly[mName] ?? 0) + e.amount;
       }
     }
 
     const data = Object.entries(monthly).map(([month, ml]) => ({ month, ml }));
     const first = data[0]?.month ?? "";
     const last = data[data.length - 1]?.month ?? "";
-    const label = `Monthly Frozen · ${first} – ${last}`;
+    const firstYear = monthYears[first] ?? "";
+    const lastYear = monthYears[last] ?? "";
+    const label = `Monthly Frozen · ${first} ${firstYear} – ${last} ${lastYear}`;
 
     return { monthlyData: data, halfYearLabel: label };
   }, [entries, halfYearOffset]);

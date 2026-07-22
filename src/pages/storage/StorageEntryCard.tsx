@@ -30,28 +30,17 @@ function expiryColor(days: number): string {
 export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: StorageEntryCardProps) {
   const expiryDate = getExpiryDate(entry);
   const days = expiryDate ? daysFromNow(expiryDate) : null;
+  const isUsed = entry.used;
 
   return (
     <div
       className={`flex cursor-pointer items-center gap-3 rounded-lg border border-l-4 p-3 transition-colors ${
         checked ? "bg-accent" : "bg-card hover:bg-accent/50"
       } ${
-        entry.used ? "border-l-gray-300" : "border-l-sky-500"
+        isUsed ? "border-l-gray-300" : "border-l-sky-500"
       }`}
       onClick={onOpenDetail}
     >
-      {/* Checkbox */}
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-        onClick={(e) => e.stopPropagation()}
-        className="size-4 shrink-0 rounded accent-primary"
-      />
-
       {/* Thumbnail */}
       {entry.imageUrl ? (
         <img
@@ -62,7 +51,16 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
           className="h-12 w-12 shrink-0 rounded-md bg-muted object-cover"
         />
       ) : (
-        <div className="h-12 w-12 shrink-0 rounded-md bg-muted" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
+          <svg width="24" height="32" viewBox="0 0 24 32" fill="none">
+            <rect x="4" y="10" width="16" height="22" rx="3" fill="#d4c5b9" stroke="#b0a090" strokeWidth="1" />
+            <rect x="8" y="12" width="8" height="16" rx="2" fill="#f0e8e0" />
+            <line x1="8" y1="16" x2="16" y2="16" stroke="#b0a090" strokeWidth="0.5" />
+            <line x1="8" y1="20" x2="16" y2="20" stroke="#b0a090" strokeWidth="0.5" />
+            <line x1="8" y1="24" x2="13" y2="24" stroke="#b0a090" strokeWidth="0.5" />
+            <rect x="9" y="6" width="6" height="5" rx="1" fill="#d4c5b9" stroke="#b0a090" strokeWidth="1" />
+          </svg>
+        </div>
       )}
 
       {/* Info */}
@@ -77,6 +75,20 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
           <p className="text-xs text-muted-foreground">Expires {expiryDate}</p>
         )}
       </div>
+
+      {/* Checkbox — only for non-used entries */}
+      {!isUsed && (
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="size-4 shrink-0 rounded accent-primary"
+        />
+      )}
     </div>
   );
 }

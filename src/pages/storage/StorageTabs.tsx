@@ -22,16 +22,16 @@ export function StorageTabs({ activeTab, onTabChange, totalCount, frozenCount, u
   };
 
   return (
-    <div className="flex gap-1 rounded-lg bg-muted p-1">
+    <div className="flex gap-2">
       {TABS.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onTabChange(tab.id)}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === tab.id
-              ? "bg-white text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
           }`}
         >
           {tab.label} ({counts[tab.id]})

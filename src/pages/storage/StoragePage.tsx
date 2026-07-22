@@ -132,8 +132,8 @@ export function StoragePage() {
 
   // ── Render ────────────────────────────────────────────────────
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="mb-4 text-2xl font-bold">My Frozen Milk</h1>
+    <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
+      <h1 className="text-2xl font-bold">📦 Storage</h1>
 
       {/* Tabs */}
       <StorageTabs
@@ -148,7 +148,7 @@ export function StoragePage() {
       />
 
       {/* Sort + Filter row */}
-      <div className="mt-3 flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setSortAsc((prev) => !prev)}
@@ -172,7 +172,7 @@ export function StoragePage() {
       </div>
 
       {/* Entry list */}
-      <div className="mt-3 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         {loadError ? (
           <p className="py-8 text-center text-sm text-red-600">Couldn't load entries.</p>
         ) : sortedEntries.length === 0 ? (

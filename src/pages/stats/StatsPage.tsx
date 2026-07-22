@@ -1,190 +1,130 @@
-import { useRef, useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Button } from "@/components/ui/button";
-import { uploadMilk } from "@/lib/upload-fn";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getEntries } from "@/lib/entries-fn";
-import type { MilkSheetEntry } from "@/lib/sheets";
-import { ArrowUpDown } from "lucide-react";
-import { SnapMilkPacketButton } from "@/components/SnapMilkPacketButton";
-import { PendingUploadList, type PendingEntry } from "@/components/PendingUploadList";
-import { EntryCard } from "@/components/EntryCard";
-import {
-  StatusFilterChips,
-  type EntryFilter,
-} from "@/components/StatusFilterChips";
-import {
-  AdvancedFilters,
-  type NumOp,
-} from "@/components/AdvancedFilters";
-import { StorageSummary } from "@/components/StorageSummary";
+import { PeriodSummaryCard } from "@/pages/stats/PeriodSummaryCard";
+import { DailyFrozenChart } from "@/pages/stats/DailyFrozenChart";
+
+function parseSheetDate(s: string): number {
+  const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
+  if (!m) return NaN;
+  const d = new Date(`${m[2]} ${m[1]}, 20${m[3]}`);
+  return d.getTime();
+}
+
+/** Check if a timestamp falls within the current week (Mon–Sun in SG time). */
+function isThisWeek(ts: number): boolean {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return ts >= monday.getTime() && ts <= sunday.getTime();
+}
+
+/** Check if a timestamp falls within the current month. */
+function isThisMonth(ts: number): boolean {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  return ts >= start.getTime() && ts <= end.getTime();
+}
 
 export function StatsPage() {
-  const queryClient = useQueryClient();
-  const { data: savedEntries = [], error: loadError } = useQuery({
+  const { data: entries = [] } = useQuery({
     queryKey: ["entries"],
     queryFn: () => getEntries(),
   });
 
-  const [pending, setPending] = useState<PendingEntry[]>([]);
-  const filesRef = useRef<Map<string, File>>(new Map());
-  const uploadMilkFn = useServerFn(uploadMilk);
+  // ── Period summaries ─────────────────────────────────────────
+  const { weekAdded, weekUsed, monthAdded, monthUsed } = useMemo(() => {
+    let weekAdded = 0, weekUsed = 0, monthAdded = 0, monthUsed = 0;
 
-  function handleFile(file: File) {
-    const id = crypto.randomUUID();
-    filesRef.current.set(id, file);
-    const previewUrl = URL.createObjectURL(file);
-    setPending((prev) => [{ id, previewUrl, status: "processing" }, ...prev]);
-    void runUpload(id, file);
-  }
+    for (const e of entries) {
+      const freezeMs = parseSheetDate(e.date);
+      if (!Number.isNaN(freezeMs)) {
+        if (isThisWeek(freezeMs)) weekAdded += e.amount;
+        if (isThisMonth(freezeMs)) monthAdded += e.amount;
+      }
 
-  function retry(id: string) {
-    const file = filesRef.current.get(id);
-    if (!file) return;
-    setPending((prev) =>
-      prev.map((e) =>
-        e.id === id ? { ...e, status: "processing", error: undefined } : e,
-      ),
-    );
-    void runUpload(id, file);
-  }
-
-  function dismiss(id: string) {
-    setPending((prev) => prev.filter((e) => e.id !== id));
-    filesRef.current.delete(id);
-  }
-
-  async function runUpload(id: string, file: File) {
-    const form = new FormData();
-    form.append("image", file);
-    try {
-      const { id: serverId, result, srcSetThumb } = await uploadMilkFn({ data: form });
-      setPending((prev) =>
-        prev.map((e) =>
-          e.id === id ? { ...e, id: serverId, status: "done", result, srcSetThumb } : e,
-        ),
-      );
-      void queryClient.invalidateQueries({ queryKey: ["entries"] });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Upload failed";
-      setPending((prev) =>
-        prev.map((e) =>
-          e.id === id ? { ...e, status: "error", error: msg } : e,
-        ),
-      );
+      if (e.used && e.usedAt) {
+        const usedMs = Date.parse(e.usedAt);
+        if (!Number.isNaN(usedMs)) {
+          if (isThisWeek(usedMs)) weekUsed += e.amount;
+          if (isThisMonth(usedMs)) monthUsed += e.amount;
+        }
+      }
     }
-  }
 
-  const [sortAsc, setSortAsc] = useState(true);
-  const [filter, setFilter] = useState<EntryFilter>("active");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [dateStart, setDateStart] = useState("");
-  const [dateEnd, setDateEnd] = useState("");
-  const [amountOp, setAmountOp] = useState<NumOp>("eq");
-  const [amountVal, setAmountVal] = useState("");
-  const [packetsOp, setPacketsOp] = useState<NumOp>("eq");
-  const [packetsVal, setPacketsVal] = useState("");
+    return { weekAdded, weekUsed, monthAdded, monthUsed };
+  }, [entries]);
 
-  const parseSheetDate = (s: string): number => {
-    const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
-    if (!m) return NaN;
-    const d = new Date(`${m[2]} ${m[1]}, 20${m[3]}`);
-    return d.getTime();
-  };
+  // ── Daily frozen (last 7 days Mon–Sun) ──────────────────────
+  const dailyData = useMemo(() => {
+    const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
 
-  const parsePickerDate = (s: string): number => {
-    if (!s) return NaN;
-    const d = new Date(s + "T00:00:00");
-    return d.getTime();
-  };
+    const daily: Record<string, number> = {};
+    for (const day of DAYS) daily[day] = 0;
 
-  const matchesNumFilter = (value: number, op: NumOp, raw: string): boolean => {
-    if (raw === "") return true;
-    const target = Number(raw);
-    if (Number.isNaN(target)) return true;
-    if (op === "eq") return value === target;
-    if (op === "gte") return value >= target;
-    return value <= target;
-  };
-
-  const filteredEntries = useMemo(() => {
-    return savedEntries.filter((e) => {
-      if (filter === "completed" && e.totalUsed !== e.packets) return false;
-      if (filter === "active" && e.totalUsed >= e.packets) return false;
-      if (dateStart) {
-        const ts = parseSheetDate(e.date);
-        if (!Number.isNaN(ts) && ts < parsePickerDate(dateStart)) return false;
+    for (const e of entries) {
+      const freezeMs = parseSheetDate(e.date);
+      if (Number.isNaN(freezeMs)) continue;
+      const d = new Date(freezeMs);
+      // Only count if this week
+      if (d.getTime() >= monday.getTime()) {
+        const dayIdx = (d.getDay() + 6) % 7; // Sun=6, Mon=0
+        daily[DAYS[dayIdx]] += e.amount;
       }
-      if (dateEnd) {
-        const ts = parseSheetDate(e.date);
-        if (!Number.isNaN(ts) && ts > parsePickerDate(dateEnd) + 86_399_999) return false;
-      }
-      if (!matchesNumFilter(e.amount, amountOp, amountVal)) return false;
-      if (!matchesNumFilter(e.packets, packetsOp, packetsVal)) return false;
-      return true;
-    });
-  }, [savedEntries, filter, dateStart, dateEnd, amountOp, amountVal, packetsOp, packetsVal]);
+    }
 
-  const entryTimestamp = (e: MilkSheetEntry): number => {
-    const dateMs = parseSheetDate(e.date);
-    if (Number.isNaN(dateMs)) return 0;
-    const [h = "0", m = "0"] = e.time.split(":");
-    return dateMs + Number(h) * 3_600_000 + Number(m) * 60_000;
-  };
+    return DAYS.map((day) => ({ day, ml: daily[day] }));
+  }, [entries]);
 
-  const sortedEntries = useMemo(() => {
-    const sorted = [...filteredEntries].sort((a, b) => entryTimestamp(a) - entryTimestamp(b));
-    return sortAsc ? sorted : sorted.reverse();
-  }, [filteredEntries, sortAsc]);
+  // ── Date range labels ───────────────────────────────────────
+  const weekLabel = useMemo(() => {
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const sun = new Date(monday);
+    sun.setDate(monday.getDate() + 6);
+
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("en-SG", { day: "numeric", month: "short" });
+    return `${fmt(monday)} – ${fmt(sun)}`;
+  }, []);
+
+  const monthLabel = useMemo(() => {
+    const now = new Date();
+    return now.toLocaleDateString("en-SG", { month: "short", year: "numeric" });
+  }, []);
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">📊 Stats</h1>
+    <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
+      <h1 className="text-2xl font-bold">📊 Stats</h1>
 
-      <SnapMilkPacketButton onFile={handleFile} />
-      <PendingUploadList pending={pending} onRetry={retry} onDismiss={dismiss} />
-
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground">Saved packets</h2>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setSortAsc((prev) => !prev)}>
-            <ArrowUpDown className="mr-1 h-3 w-3" />
-            {sortAsc ? "Oldest first" : "Newest first"}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {sortedEntries.length}
-            {filter !== "all" && ` / ${savedEntries.length}`}
-          </span>
-        </div>
+      {/* Period cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <PeriodSummaryCard
+          title="This Week"
+          subtitle={weekLabel}
+          added={weekAdded}
+          used={weekUsed}
+        />
+        <PeriodSummaryCard
+          title="This Month"
+          subtitle={monthLabel}
+          added={monthAdded}
+          used={monthUsed}
+        />
       </div>
 
-      <StatusFilterChips filter={filter} onFilterChange={setFilter} filtersOpen={filtersOpen} onToggleFilters={() => setFiltersOpen((p) => !p)} />
-
-      {filtersOpen && (
-        <AdvancedFilters
-          dateStart={dateStart} dateEnd={dateEnd}
-          onDateStartChange={setDateStart} onDateEndChange={setDateEnd}
-          amountOp={amountOp} amountVal={amountVal}
-          onAmountOpChange={setAmountOp} onAmountValChange={setAmountVal}
-          packetsOp={packetsOp} packetsVal={packetsVal}
-          onPacketsOpChange={setPacketsOp} onPacketsValChange={setPacketsVal}
-          onClear={() => { setDateStart(""); setDateEnd(""); setAmountVal(""); setPacketsVal(""); }}
-        />
-      )}
-
-      <StorageSummary entries={filteredEntries} />
-
-      {loadError ? (
-        <p className="text-center text-sm text-red-600">Couldn't load packets from the sheet.</p>
-      ) : sortedEntries.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground">No packets in the sheet yet.</p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {sortedEntries.map((entry: MilkSheetEntry) => (
-            <EntryCard key={entry.id} entry={entry} />
-          ))}
-        </div>
-      )}
+      {/* Daily chart */}
+      <DailyFrozenChart data={dailyData} />
     </main>
   );
 }

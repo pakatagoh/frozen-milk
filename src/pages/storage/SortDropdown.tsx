@@ -35,7 +35,7 @@ export function SortDropdown({ sortKey, onSortChange }: SortDropdownProps) {
           <ChevronDown className="size-3.5" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-44">
+      <DropdownMenuContent align="start" className="w-44 bg-white text-gray-900">
         <DropdownMenuRadioGroup
           value={sortKey}
           onValueChange={(v) => onSortChange(v as SortKey)}

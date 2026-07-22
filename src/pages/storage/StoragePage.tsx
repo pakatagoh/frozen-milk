@@ -166,7 +166,7 @@ export function StoragePage() {
           className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors ${
             filter.dateStart || filter.dateEnd || filter.amountVal
               ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              : "hover:text-foreground"
           }`}
         >
           <SlidersHorizontal className="size-4" />

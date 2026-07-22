@@ -28,7 +28,7 @@ export function SortDropdown({ sortKey, onSortChange }: SortDropdownProps) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors hover:text-foreground"
         >
           <ArrowUpDown className="size-3.5" />
           {SORT_LABELS[sortKey]}

@@ -87,12 +87,12 @@ export function EntryDetailModal({ entry, open, onClose }: EntryDetailModalProps
           ) : (
             <div className="flex h-48 items-center justify-center">
               <svg width="48" height="64" viewBox="0 0 24 32" fill="none">
-                <rect x="4" y="10" width="16" height="22" rx="3" fill="#d4c5b9" stroke="#b0a090" strokeWidth="1" />
-                <rect x="8" y="12" width="8" height="16" rx="2" fill="#f0e8e0" />
-                <line x1="8" y1="16" x2="16" y2="16" stroke="#b0a090" strokeWidth="0.5" />
-                <line x1="8" y1="20" x2="16" y2="20" stroke="#b0a090" strokeWidth="0.5" />
-                <line x1="8" y1="24" x2="13" y2="24" stroke="#b0a090" strokeWidth="0.5" />
-                <rect x="9" y="6" width="6" height="5" rx="1" fill="#d4c5b9" stroke="#b0a090" strokeWidth="1" />
+                <rect x="4" y="10" width="16" height="22" rx="3" fill="#e8c0cc" stroke="#c07d8e" strokeWidth="1" />
+                <rect x="8" y="12" width="8" height="16" rx="2" fill="#f5e0e5" />
+                <line x1="8" y1="16" x2="16" y2="16" stroke="#c07d8e" strokeWidth="0.5" />
+                <line x1="8" y1="20" x2="16" y2="20" stroke="#c07d8e" strokeWidth="0.5" />
+                <line x1="8" y1="24" x2="13" y2="24" stroke="#c07d8e" strokeWidth="0.5" />
+                <rect x="9" y="6" width="6" height="5" rx="1" fill="#e8c0cc" stroke="#c07d8e" strokeWidth="1" />
               </svg>
             </div>
           )}

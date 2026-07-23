@@ -66,8 +66,10 @@ export function StatsPage() {
       if (!Number.isNaN(freezeMs) && isInWeek(freezeMs, weekMonday)) {
         added += e.amount;
       }
-      if (e.used && e.usedAt) {
-        const usedMs = Date.parse(e.usedAt);
+      if (e.used) {
+        const usedMs = e.usedAt
+          ? Date.parse(e.usedAt)
+          : freezeMs; // fall back to freeze date if usedAt is empty
         if (!Number.isNaN(usedMs) && isInWeek(usedMs, weekMonday)) {
           used += e.amount;
         }
@@ -84,8 +86,10 @@ export function StatsPage() {
       if (!Number.isNaN(freezeMs) && isInMonth(freezeMs, monthStart)) {
         added += e.amount;
       }
-      if (e.used && e.usedAt) {
-        const usedMs = Date.parse(e.usedAt);
+      if (e.used) {
+        const usedMs = e.usedAt
+          ? Date.parse(e.usedAt)
+          : freezeMs; // fall back to freeze date if usedAt is empty
         if (!Number.isNaN(usedMs) && isInMonth(usedMs, monthStart)) {
           used += e.amount;
         }

@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getEntries } from "@/lib/entries-fn";
+import { getBabyProfile } from "@/lib/baby-profile-fn";
 import { getExpiryDate, formatExpiryShort } from "@/lib/expiry";
 import type { MilkSheetEntry } from "@/lib/sheets";
+import { BabyProfileHero } from "@/pages/overview/BabyProfileHero";
 import { StatsGrid } from "@/pages/overview/StatsGrid";
 import { ExpiryTimeline } from "@/pages/overview/ExpiryTimeline";
 import { RecentEntries } from "@/pages/overview/RecentEntries";
@@ -38,6 +40,12 @@ export function OverviewPage() {
   const { data: entries = [] } = useQuery({
     queryKey: ["entries"],
     queryFn: () => getEntries(),
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["babyProfile"],
+    queryFn: () => getBabyProfile(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const activeEntries = useMemo(
@@ -83,6 +91,7 @@ export function OverviewPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
+      {profile && <BabyProfileHero profile={profile} />}
       <StatsGrid
         bagCount={bagCount}
         upcomingExpiry={upcomingExpiry}

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { fetchBabyProfile } from "./baby-profile";
-import type { BabyProfile } from "./baby-profile";
+import { fetchBabyProfile, updateBabyProfile, updateProfileImage } from "./baby-profile";
+import type { BabyProfile, UpdateBabyProfileInput } from "./baby-profile";
+import { saveUpload, generateImgproxyUrl } from "./images";
 
 export { type BabyProfile } from "./baby-profile";
 
@@ -10,3 +11,35 @@ export const getBabyProfile = createServerFn({ method: "GET" }).handler(
     return fetchBabyProfile();
   },
 );
+
+/** Update the baby's name, DOB, and gender. */
+export const saveBabyProfile = createServerFn({ method: "POST" })
+  .validator((data: unknown): UpdateBabyProfileInput => {
+    const d = data as Record<string, unknown>;
+    const firstName = String(d.firstName || "").trim();
+    const dateOfBirth = String(d.dateOfBirth || "").trim();
+    const gender = String(d.gender || "").toLowerCase() === "female" ? "female" as const : "male" as const;
+    if (!firstName) throw new Error("First name is required");
+    if (!dateOfBirth) throw new Error("Date of birth is required");
+    return { firstName, dateOfBirth, gender };
+  })
+  .handler(async ({ data }) => {
+    await updateBabyProfile(data);
+  });
+
+/** Upload a profile photo: save, compress, generate imgproxy URL, write to sheet. */
+export const uploadProfilePhoto = createServerFn({ method: "POST" })
+  .validator((data: FormData) => {
+    const file = data.get("file");
+    if (!(file instanceof File)) throw new Error("No file provided");
+    if (!file.type.startsWith("image/")) throw new Error("File must be an image");
+    if (file.size > 20 * 1024 * 1024) throw new Error("File must be under 20 MB");
+    return file;
+  })
+  .handler(async ({ data: file }) => {
+    const { storedPath } = await saveUpload(file, "profile");
+    // Generate 400×400 square for hero + preview
+    const imageUrl = generateImgproxyUrl(storedPath, 400, 400);
+    await updateProfileImage(imageUrl);
+    return { imageUrl };
+  });

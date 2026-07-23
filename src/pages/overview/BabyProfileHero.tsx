@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 import type { BabyProfile } from "@/lib/baby-profile-fn";
 import { BabyAvatarPlaceholder } from "@/pages/overview/BabyAvatarPlaceholder";
 import { Pencil } from "lucide-react";
@@ -7,7 +8,6 @@ interface BabyProfileHeroProps {
   profile: BabyProfile;
   /** Optional uploaded image URL to replace the placeholder. */
   imageUrl?: string | null;
-  onEdit?: () => void;
 }
 
 function computeAge(dob: string): string {
@@ -47,7 +47,7 @@ function computeAge(dob: string): string {
   return `${years} year${years > 1 ? "s" : ""}, ${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`;
 }
 
-export function BabyProfileHero({ profile, imageUrl, onEdit }: BabyProfileHeroProps) {
+export function BabyProfileHero({ profile, imageUrl }: BabyProfileHeroProps) {
   const age = useMemo(() => computeAge(profile.dateOfBirth), [profile.dateOfBirth]);
 
   return (
@@ -80,16 +80,13 @@ export function BabyProfileHero({ profile, imageUrl, onEdit }: BabyProfileHeroPr
       </div>
 
       {/* Edit */}
-      {onEdit && (
-        <button
-          type="button"
-          onClick={onEdit}
-          className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          aria-label="Edit profile"
-        >
-          <Pencil className="size-4" />
-        </button>
-      )}
+      <Link
+        to="/settings/baby/edit"
+        className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        aria-label="Edit profile"
+      >
+        <Pencil className="size-4" />
+      </Link>
     </div>
   );
 }

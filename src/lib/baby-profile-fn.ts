@@ -22,11 +22,12 @@ export const saveBabyProfile = createServerFn({ method: "POST" })
   .validator((data: unknown): UpdateBabyProfileInput => {
     const d = data as Record<string, unknown>;
     const firstName = String(d.firstName || "").trim();
+    const lastName = String(d.lastName || "").trim();
     const dateOfBirth = String(d.dateOfBirth || "").trim();
     const gender = String(d.gender || "").toLowerCase() === "female" ? "female" as const : "male" as const;
     if (!firstName) throw new Error("First name is required");
     if (!dateOfBirth) throw new Error("Date of birth is required");
-    return { firstName, dateOfBirth, gender };
+    return { firstName, lastName, dateOfBirth, gender };
   })
   .handler(async ({ data }) => {
     await updateBabyProfile(data);

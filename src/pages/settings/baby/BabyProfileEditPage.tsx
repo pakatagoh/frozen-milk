@@ -20,6 +20,7 @@ export function BabyProfileEditPage() {
   });
 
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function BabyProfileEditPage() {
   useEffect(() => {
     if (profile) {
       setFirstName(profile.firstName);
+      setLastName(profile.lastName);
       setDateOfBirth(profile.dateOfBirth);
       setGender(profile.gender);
       setImageUrl(profile.imageUrl);
@@ -39,7 +41,7 @@ export function BabyProfileEditPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      await saveFn({ data: { firstName, dateOfBirth, gender } });
+      await saveFn({ data: { firstName, lastName, dateOfBirth, gender } });
       void queryClient.invalidateQueries({ queryKey: ["babyProfile"] });
       navigate({ to: "/settings" });
     } finally {
@@ -118,6 +120,16 @@ export function BabyProfileEditPage() {
             type="text"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
+            className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Last Name</span>
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
           />
         </label>

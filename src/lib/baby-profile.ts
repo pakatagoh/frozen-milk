@@ -133,6 +133,7 @@ export async function updateProfileImage(imageUrl: string): Promise<void> {
 
 export interface UpdateBabyProfileInput {
   firstName: string;
+  lastName: string;
   dateOfBirth: string; // "YYYY-MM-DD"
   gender: "male" | "female";
 }
@@ -142,20 +143,12 @@ export async function updateBabyProfile(input: UpdateBabyProfileInput): Promise<
   const sheetId = requireEnv("GOOGLE_SHEET_ID");
   const sheets = getSheetsClient();
 
-  // Columns: B=firstName, C=lastName (preserved), D=gender, E=dateOfBirth
-  // Read existing to preserve lastName
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId: sheetId,
-    range: "'metadata'!A2:C2",
-  });
-  const lastName = existing.data.values?.[0]?.[2] ?? "";
-
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
     range: "'metadata'!B2:E2",
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [[input.firstName, lastName, input.gender, input.dateOfBirth]],
+      values: [[input.firstName, input.lastName, input.gender, input.dateOfBirth]],
     },
   });
 }

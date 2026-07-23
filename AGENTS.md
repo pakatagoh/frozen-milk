@@ -121,6 +121,57 @@ import Node builtins at the top level of a server function file (they get
 tree-shaken by TanStack's import protection, but dynamic `import()` is safer
 and the established pattern here).
 
+### SSR-first data loading
+
+**Every page must arrive pre-populated on first paint.** The route loader is
+the mechanism — a `useQuery` alone is not enough because it only fires
+client-side, causing a flash of empty UI before data arrives.
+
+```ts
+// ✅ Correct — loader prefetches, SSR serialises the data
+export const Route = createFileRoute("/example")({
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery({
+      queryKey: ["example"],
+      queryFn: () => getExample(),
+    }),
+  component: ExamplePage,
+});
+
+// ❌ Wrong — no loader, only client-side useQuery
+export const Route = createFileRoute("/example")({
+  component: ExamplePage,
+});
+```
+
+**Critical rules:**
+
+- **Every route that fetches data gets a loader.** No exceptions. The loader
+  calls `context.queryClient.prefetchQuery()` with the same `queryKey` and
+  `queryFn` used by the page's `useQuery`.
+- **Loaders must return a promise.** An implicit return (arrow expression) works
+  for a single prefetch. A block body `{...}` with multiple calls must
+  `return Promise.all([...])` — otherwise the router doesn't await anything
+  and the data doesn't land in the SSR payload.
+- **Non-critical queries must not crash the page.** Wrap optional data in
+  `.catch(() => {})` so a backend failure on a secondary query doesn't take
+  down the entire route loader and its sibling queries:
+
+  ```ts
+  loader: ({ context }) => {
+    const critical = context.queryClient.prefetchQuery({...});
+    const optional = context.queryClient.prefetchQuery({...})
+      .catch(() => {});  // failsafe
+    return Promise.all([critical, optional]);
+  },
+  ```
+
+- **After editing routes, run `pnpm generate-routes`** to regenerate
+  `routeTree.gen.ts`.
+
+This pattern eliminates layout shifts and flash-of-empty-data UI. It's how
+`/`, `/settings`, and `/settings/baby/edit` all work today.
+
 ### Environment variables
 
 All env access is **per-request** (inside handler functions), never at module

@@ -30,17 +30,17 @@ function computeAge(dob: string): string {
     return `${weeks} week${weeks > 1 ? "s" : ""}, ${remainingDays} day${remainingDays > 1 ? "s" : ""}`;
   }
 
-  // Under 24 months: show in months + weeks
+  // Under 12 months: show in months + weeks
   const totalWeeks = Math.floor(totalDays / 7);
   const months = Math.floor(totalDays / 30.4375);
   const remainingWeeks = Math.floor((totalWeeks - months * 4.345) % 4.345);
 
-  if (months < 24) {
+  if (months < 12) {
     if (remainingWeeks <= 0) return `${months} month${months > 1 ? "s" : ""}`;
     return `${months} month${months > 1 ? "s" : ""}, ${remainingWeeks} week${remainingWeeks > 1 ? "s" : ""}`;
   }
 
-  // 2+ years: show in years + months
+  // 1+ year: show in years + months
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
   if (remainingMonths === 0) return `${years} year${years > 1 ? "s" : ""}`;

@@ -172,6 +172,20 @@ export const Route = createFileRoute("/example")({
 This pattern eliminates layout shifts and flash-of-empty-data UI. It's how
 `/`, `/settings`, and `/settings/baby/edit` all work today.
 
+**Pitfall — `useState` + `useEffect` for form init.** A form that copies query
+data into local state via `useEffect` will always flash empty because
+`useEffect` runs *after* paint. Instead, initialise state from the query data
+directly — the SSR cache makes it available on first render:
+
+```ts
+// ❌ Flashes empty inputs
+const [name, setName] = useState("");
+useEffect(() => { if (data) setName(data.name); }, [data]);
+
+// ✅ No flash — SSR data is present on first render
+const [name, setName] = useState(data?.name ?? "");
+```
+
 ### Environment variables
 
 All env access is **per-request** (inside handler functions), never at module

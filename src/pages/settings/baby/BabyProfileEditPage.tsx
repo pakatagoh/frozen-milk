@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
@@ -19,24 +19,13 @@ export function BabyProfileEditPage() {
     queryFn: () => getBabyProfile(),
   });
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("male");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState(profile?.firstName ?? "");
+  const [lastName, setLastName] = useState(profile?.lastName ?? "");
+  const [dateOfBirth, setDateOfBirth] = useState(profile?.dateOfBirth ?? "");
+  const [gender, setGender] = useState<"male" | "female">(profile?.gender ?? "male");
+  const [imageUrl, setImageUrl] = useState<string | null>(profile?.imageUrl ?? null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  // Populate form when profile loads
-  useEffect(() => {
-    if (profile) {
-      setFirstName(profile.firstName);
-      setLastName(profile.lastName);
-      setDateOfBirth(profile.dateOfBirth);
-      setGender(profile.gender);
-      setImageUrl(profile.imageUrl);
-    }
-  }, [profile]);
 
   async function handleSave() {
     setSaving(true);

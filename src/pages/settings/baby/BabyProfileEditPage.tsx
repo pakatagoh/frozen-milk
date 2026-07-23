@@ -157,9 +157,8 @@ export function BabyProfileEditPage() {
                     checked={isActive}
                     onChange={() => setGender(g)}
                     className="sr-only"
-                  />
-                  <span className="text-base leading-none">{g === "male" ? "♂" : "♀"}</span>
-                  {g === "male" ? "Male" : "Female"}
+                    />
+                    {g === "male" ? "Male" : "Female"}
                 </label>
               );
             })}

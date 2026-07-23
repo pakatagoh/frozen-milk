@@ -1,6 +1,7 @@
 import type { MilkSheetEntry } from "@/lib/sheets";
 import { getExpiryDate } from "@/lib/expiry";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 
 interface StorageEntryCardProps {
@@ -36,9 +37,7 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
 
   return (
     <div
-      className={`flex cursor-pointer items-center gap-3 rounded-lg border border-l-4 p-3 transition-colors hover:bg-accent/50 ${
-        isUsed ? "border-l-gray-400" : "border-l-sky-500"
-      }`}
+      className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50"
       onClick={onOpenDetail}
     >
       {/* Thumbnail */}
@@ -65,7 +64,19 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="text-base font-medium">{entry.amount}ml</p>
+        <div className="flex items-center gap-2">
+          <p className="text-base font-medium">{entry.amount}ml</p>
+          <Badge
+            variant="secondary"
+            className={
+              isUsed
+                ? "bg-gray-200 text-gray-600 hover:bg-gray-200"
+                : "bg-[#d6e0e9] text-[#233242] hover:bg-[#d6e0e9]"
+            }
+          >
+            {isUsed ? "Used" : "Frozen"}
+          </Badge>
+        </div>
         <p className="text-xs text-muted-foreground">Frozen {entry.date}</p>
         {!isUsed && expiryDate && days !== null && (
           <p className="text-xs">

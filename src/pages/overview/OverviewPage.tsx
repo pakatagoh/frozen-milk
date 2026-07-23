@@ -71,16 +71,27 @@ export function OverviewPage() {
     [activeEntries],
   );
 
-  // Timeline buckets — hardcoded for preview (remove after review)
+  // Timeline buckets — computed from active entries by expiry urgency
   const timelineBuckets = useMemo(() => {
-    const maxBags = 10;
-    return [
-      { label: "Within 1 week", color: "red",  bags: 2, ml: 180, maxBags },
-      { label: "1–2 weeks",     color: "orange", bags: 3, ml: 300, maxBags },
-      { label: "2–4 weeks",     color: "yellow", bags: 4, ml: 420, maxBags },
-      { label: "1–3 months",    color: "green", bags: 5, ml: 500, maxBags },
+    interface Bucket { label: string; color: string; bags: number; ml: number; }
+    const buckets: Bucket[] = [
+      { label: "Within 1 week", color: "red",    bags: 0, ml: 0 },
+      { label: "1–2 weeks",     color: "orange", bags: 0, ml: 0 },
+      { label: "2–4 weeks",     color: "yellow", bags: 0, ml: 0 },
+      { label: "1–3 months",    color: "green",  bags: 0, ml: 0 },
     ];
-  }, []);
+
+    for (const e of activeEntries) {
+      const days = daysUntilExpiry(e);
+      if (days <= 7)            { buckets[0].bags++; buckets[0].ml += e.amount; }
+      else if (days <= 14)      { buckets[1].bags++; buckets[1].ml += e.amount; }
+      else if (days <= 28)      { buckets[2].bags++; buckets[2].ml += e.amount; }
+      else if (days <= 90)      { buckets[3].bags++; buckets[3].ml += e.amount; }
+    }
+
+    const maxBags = Math.max(...buckets.map((b) => b.bags), 1);
+    return buckets.map((b) => ({ ...b, maxBags }));
+  }, [activeEntries]);
 
   // Recent entries: last 3 by date+time descending (createdAt fallback)
   const recentEntries = useMemo(() => {

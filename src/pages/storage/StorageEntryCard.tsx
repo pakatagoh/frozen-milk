@@ -67,7 +67,7 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
       <div className="min-w-0 flex-1">
         <p className="text-base font-medium">{entry.amount}ml</p>
         <p className="text-xs text-muted-foreground">Frozen {entry.date}</p>
-        {expiryDate && days !== null && (
+        {!isUsed && expiryDate && days !== null && (
           <p className="text-xs">
             Expires {expiryDate}
             {" · "}

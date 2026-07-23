@@ -28,7 +28,7 @@ function SettingsMenu() {
   return (
     <div className="space-y-1">
       <Link
-        to="/settings/baby/edit"
+        to="/settings/baby"
         className="flex items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
       >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">

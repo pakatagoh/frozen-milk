@@ -81,7 +81,7 @@ export function BabyProfileHero({ profile, imageUrl }: BabyProfileHeroProps) {
 
       {/* Edit */}
       <Link
-        to="/settings/baby/edit"
+        to="/settings/baby"
         className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
         aria-label="Edit profile"
       >

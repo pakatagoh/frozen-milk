@@ -12,6 +12,7 @@ import { StorageEntryCard } from "@/pages/storage/StorageEntryCard";
 import { BatchActionBar } from "@/pages/storage/BatchActionBar";
 import { FilterModal, type FilterState, type NumOp } from "@/pages/storage/FilterModal";
 import { EntryDetailModal } from "@/pages/storage/EntryDetailModal";
+import { fetchSortOption, sortOptionToSortKey } from "@/lib/app-settings-fn";
 
 type TabId = "all" | "frozen" | "used";
 
@@ -54,8 +55,14 @@ export function StoragePage() {
     queryFn: () => getEntries(),
   });
 
+  const { data: sortOption } = useQuery({
+    queryKey: ["appSetting", "sort"],
+    queryFn: () => fetchSortOption(),
+  });
   const [activeTab, setActiveTab] = useState<TabId>("frozen");
-  const [sortKey, setSortKey] = useState<SortKey>("newest");
+  const [sortKey, setSortKey] = useState<SortKey>(
+    sortOption ? sortOptionToSortKey(sortOption) : "newest",
+  );
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

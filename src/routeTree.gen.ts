@@ -14,6 +14,7 @@ import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsSortRouteImport } from './routes/settings.sort'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as SettingsBabyEditRouteImport } from './routes/settings.baby.edit'
 
@@ -42,6 +43,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsSortRoute = SettingsSortRouteImport.update({
+  id: '/sort',
+  path: '/sort',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/storage': typeof StorageRoute
   '/api/health': typeof ApiHealthRoute
+  '/settings/sort': typeof SettingsSortRoute
   '/settings/': typeof SettingsIndexRoute
   '/settings/baby/edit': typeof SettingsBabyEditRoute
 }
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/storage': typeof StorageRoute
   '/api/health': typeof ApiHealthRoute
+  '/settings/sort': typeof SettingsSortRoute
   '/settings': typeof SettingsIndexRoute
   '/settings/baby/edit': typeof SettingsBabyEditRoute
 }
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/storage': typeof StorageRoute
   '/api/health': typeof ApiHealthRoute
+  '/settings/sort': typeof SettingsSortRoute
   '/settings/': typeof SettingsIndexRoute
   '/settings/baby/edit': typeof SettingsBabyEditRoute
 }
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/storage'
     | '/api/health'
+    | '/settings/sort'
     | '/settings/'
     | '/settings/baby/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/storage'
     | '/api/health'
+    | '/settings/sort'
     | '/settings'
     | '/settings/baby/edit'
   id:
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/storage'
     | '/api/health'
+    | '/settings/sort'
     | '/settings/'
     | '/settings/baby/edit'
   fileRoutesById: FileRoutesById
@@ -154,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/sort': {
+      id: '/settings/sort'
+      path: '/sort'
+      fullPath: '/settings/sort'
+      preLoaderRoute: typeof SettingsSortRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -172,11 +191,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface SettingsRouteChildren {
+  SettingsSortRoute: typeof SettingsSortRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   SettingsBabyEditRoute: typeof SettingsBabyEditRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsSortRoute: SettingsSortRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   SettingsBabyEditRoute: SettingsBabyEditRoute,
 }

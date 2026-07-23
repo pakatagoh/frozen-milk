@@ -1,4 +1,4 @@
-import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ArrowDown, ArrowUp } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +13,8 @@ export type SortKey = "newest" | "oldest" | "largest" | "least";
 const SORT_LABELS: Record<SortKey, string> = {
   newest: "Newest first",
   oldest: "Oldest first",
-  largest: "Largest amount",
-  least: "Least amount",
+  largest: "Volume \u2193",
+  least: "Volume \u2191",
 };
 
 interface SortDropdownProps {
@@ -43,8 +43,12 @@ export function SortDropdown({ sortKey, onSortChange }: SortDropdownProps) {
           <DropdownMenuRadioItem value="newest">Newest first</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="oldest">Oldest first</DropdownMenuRadioItem>
           <DropdownMenuSeparator />
-          <DropdownMenuRadioItem value="largest">Largest amount</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="least">Least amount</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="largest">
+            Volume <ArrowDown className="size-3.5" />
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="least">
+            Volume <ArrowUp className="size-3.5" />
+          </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

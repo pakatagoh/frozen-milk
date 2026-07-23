@@ -71,7 +71,7 @@ export function StorageEntryCard({ entry, checked, onToggle, onOpenDetail }: Sto
             className={
               isUsed
                 ? "bg-gray-200 text-gray-600 hover:bg-gray-200"
-                : "bg-[#d6e0e9] text-[#233242] hover:bg-[#d6e0e9]"
+                : "bg-[#b8d4f0] text-[#1a2d42] hover:bg-[#b8d4f0]"
             }
           >
             {isUsed ? "Used" : "Frozen"}

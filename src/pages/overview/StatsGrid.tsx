@@ -35,7 +35,7 @@ export function StatsGrid({ bagCount, upcomingExpiry, expiringSoon }: StatsGridP
         value={upcomingExpiry ?? "—"}
         span={2}
       />
-      <StatBox label="Expiring soon" value={String(expiringSoon)} />
+      <StatBox label="Expiring this week" value={String(expiringSoon)} />
     </div>
   );
 }

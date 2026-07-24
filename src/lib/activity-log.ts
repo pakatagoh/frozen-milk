@@ -3,12 +3,11 @@ import type { sheets_v4 } from "googleapis";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
-/** A row from the 'app activities' tab. */
+/** A row from the 'app events' tab. */
 export interface AppActivity {
   id: string;
   createdAt: string; // ISO 8601
   eventType: string;
-  activity: string;
   frozenMilkEntryId: string | null;
 }
 
@@ -38,14 +37,14 @@ function getSheetsClient(): sheets_v4.Sheets {
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-/** Read all activities, newest first. */
+/** Read all events, newest first. */
 export async function getAllActivities(): Promise<AppActivity[]> {
   const sheetId = requireEnv("GOOGLE_SHEET_ID");
   const sheets = getSheetsClient();
 
   const result = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: "'app activities'!A2:E",
+    range: "'app events'!A2:D",
   });
 
   const rows = result.data.values || [];
@@ -54,17 +53,15 @@ export async function getAllActivities(): Promise<AppActivity[]> {
       id: String(row[0] || ""),
       createdAt: String(row[1] || ""),
       eventType: String(row[2] || ""),
-      activity: String(row[3] || ""),
-      frozenMilkEntryId: String(row[4] || "") || null,
+      frozenMilkEntryId: String(row[3] || "") || null,
     }))
     .filter((a) => a.id !== "")
     .reverse(); // newest first (sheet appends at bottom)
 }
 
-/** Append a new activity row (atomic — uses sheets.values.append). */
+/** Append a new event row (atomic — uses sheets.values.append). */
 export async function appendActivity(activity: {
   eventType: string;
-  activity: string;
   frozenMilkEntryId?: string | null;
 }): Promise<AppActivity> {
   const sheetId = requireEnv("GOOGLE_SHEET_ID");
@@ -75,11 +72,11 @@ export async function appendActivity(activity: {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: sheetId,
-    range: "'app activities'!A2:E",
+    range: "'app events'!A2:D",
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
-      values: [[id, createdAt, activity.eventType, activity.activity, activity.frozenMilkEntryId ?? ""]],
+      values: [[id, createdAt, activity.eventType, activity.frozenMilkEntryId ?? ""]],
     },
   });
 
@@ -87,7 +84,6 @@ export async function appendActivity(activity: {
     id,
     createdAt,
     eventType: activity.eventType,
-    activity: activity.activity,
     frozenMilkEntryId: activity.frozenMilkEntryId ?? null,
   };
 }

@@ -19,6 +19,13 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
+function formatActivity(eventType: string, entry?: MilkSheetEntry): string {
+  if (eventType === "milk_frozen" && entry) {
+    return `Froze ${entry.amount} ml`;
+  }
+  return eventType;
+}
+
 export function ActivityPage() {
   const { data: activities = [] } = useQuery({
     queryKey: ["activities"],
@@ -69,7 +76,9 @@ export function ActivityPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm">{act.activity}</p>
+                  <p className="text-sm">
+                    {formatActivity(act.eventType, entry)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {timeAgo(act.createdAt)}
                   </p>

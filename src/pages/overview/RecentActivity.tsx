@@ -23,15 +23,18 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
+function formatActivity(eventType: string, entry?: MilkSheetEntry): string {
+  if (eventType === "milk_frozen" && entry) {
+    return `Froze ${entry.amount} ml`;
+  }
+  return eventType;
+}
+
 export function RecentActivity({ activities, entries }: RecentActivityProps) {
-  const joined = useMemo(() => {
-    const entryMap = new Map(entries.map((e) => [e.id, e]));
-    return activities
-      .filter((a) => a.frozenMilkEntryId)
-      .map((a) => ({ activity: a, entry: entryMap.get(a.frozenMilkEntryId!) }))
-      .filter((j) => j.entry)
-      .slice(0, 3);
-  }, [activities, entries]);
+  const entryMap = useMemo(
+    () => new Map(entries.map((e) => [e.id, e])),
+    [entries],
+  );
 
   const latest3 = activities.slice(0, 3);
 
@@ -53,7 +56,9 @@ export function RecentActivity({ activities, entries }: RecentActivityProps) {
       ) : (
         <div className="space-y-2">
           {latest3.map((act) => {
-            const entry = joined.find((j) => j.activity.id === act.id)?.entry;
+            const entry = act.frozenMilkEntryId
+              ? entryMap.get(act.frozenMilkEntryId)
+              : undefined;
             return (
               <div
                 key={act.id}
@@ -71,7 +76,9 @@ export function RecentActivity({ activities, entries }: RecentActivityProps) {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{act.activity}</p>
+                  <p className="truncate text-sm">
+                    {formatActivity(act.eventType, entry)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {timeAgo(act.createdAt)}
                   </p>

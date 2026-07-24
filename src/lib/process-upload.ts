@@ -73,10 +73,9 @@ export function processUpload(file: File): Promise<UploadResult> {
     });
     console.log("[process-upload] sheet append done, id:", id);
 
-    // Log the activity
+    // Log the event
     await appendActivity({
       eventType: "milk_frozen",
-      activity: `Froze ${result.amount_ml} ml`,
       frozenMilkEntryId: id,
     });
 
@@ -134,11 +133,9 @@ export function processBatchUpload(
     }
     console.log("[process-upload] batch: sheet done, ids:", ids);
 
-    // Log one activity for the batch
-    const totalMl = result.amount_ml * packetCount;
+    // Log one event for the batch
     await appendActivity({
       eventType: "milk_frozen",
-      activity: `Froze ${totalMl} ml (×${packetCount})`,
       frozenMilkEntryId: ids[0],
     });
 

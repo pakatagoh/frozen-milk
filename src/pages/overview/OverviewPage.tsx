@@ -2,30 +2,19 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getEntries } from "@/lib/entries-fn";
 import { getBabyProfile } from "@/lib/baby-profile-fn";
+import { getActivities } from "@/lib/activity-log-fn";
 import { getExpiryDate, formatExpiryShort } from "@/lib/expiry";
 import type { MilkSheetEntry } from "@/lib/sheets";
 import { BabyProfileHero } from "@/pages/overview/BabyProfileHero";
 import { StatsGrid } from "@/pages/overview/StatsGrid";
 import { ExpiryTimeline } from "@/pages/overview/ExpiryTimeline";
-import { RecentEntries } from "@/pages/overview/RecentEntries";
+import { RecentActivity } from "@/pages/overview/RecentActivity";
 
 function parseSheetDate(s: string): number {
-  const m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})$/);
+  const m = s.match(/^(\\d{1,2})-(\\w{3})-(\\d{2})$/);
   if (!m) return NaN;
   const d = new Date(`${m[2]} ${m[1]}, 20${m[3]}`);
   return d.getTime();
-}
-
-/** Sortable timestamp: date + time, falling back to createdAt if time missing. */
-function entryTimestamp(e: MilkSheetEntry): number {
-  const dateMs = parseSheetDate(e.date);
-  if (Number.isNaN(dateMs)) {
-    // Fall back to createdAt ISO datetime
-    const created = Date.parse(e.createdAt);
-    return Number.isNaN(created) ? 0 : created;
-  }
-  const [h = "0", m = "0"] = (e.time || "").split(":");
-  return dateMs + Number(h) * 3_600_000 + Number(m) * 60_000;
 }
 
 function daysUntilExpiry(entry: MilkSheetEntry): number {
@@ -46,6 +35,11 @@ export function OverviewPage() {
     queryKey: ["babyProfile"],
     queryFn: () => getBabyProfile(),
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: activities = [] } = useQuery({
+    queryKey: ["activities"],
+    queryFn: () => getActivities(),
   });
 
   const activeEntries = useMemo(
@@ -93,13 +87,6 @@ export function OverviewPage() {
     return buckets.map((b) => ({ ...b, maxBags }));
   }, [activeEntries]);
 
-  // Recent entries: last 3 by date+time descending (createdAt fallback)
-  const recentEntries = useMemo(() => {
-    return [...entries]
-      .sort((a, b) => entryTimestamp(b) - entryTimestamp(a))
-      .slice(0, 3);
-  }, [entries]);
-
   return (
     <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
       <h1 className="sr-only">Overview</h1>
@@ -110,7 +97,7 @@ export function OverviewPage() {
         expiringSoon={expiringSoon}
       />
       <ExpiryTimeline buckets={timelineBuckets} />
-      <RecentEntries entries={recentEntries} />
+      <RecentActivity activities={activities} entries={entries} />
     </main>
   );
 }

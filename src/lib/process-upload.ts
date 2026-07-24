@@ -2,6 +2,7 @@ import { analyzeMilkPacket, type MilkPacketResult } from "./ai";
 import { saveUpload, generateImgproxyUrl } from "./images";
 import { generateImgproxySrcSet } from "./imgproxy-url";
 import { appendToSheet } from "./sheets";
+import { appendActivity } from "./activity-log";
 
 /** Current time as ISO 8601 in SGT (+08:00). */
 function sgtISO(): string {
@@ -72,6 +73,13 @@ export function processUpload(file: File): Promise<UploadResult> {
     });
     console.log("[process-upload] sheet append done, id:", id);
 
+    // Log the activity
+    await appendActivity({
+      eventType: "milk_frozen",
+      activity: `Froze ${result.amount_ml} ml`,
+      frozenMilkEntryId: id,
+    });
+
     return { id, previewUrl, srcSetThumb, result };
   });
 
@@ -125,6 +133,14 @@ export function processBatchUpload(
       ids.push(id);
     }
     console.log("[process-upload] batch: sheet done, ids:", ids);
+
+    // Log one activity for the batch
+    const totalMl = result.amount_ml * packetCount;
+    await appendActivity({
+      eventType: "milk_frozen",
+      activity: `Froze ${totalMl} ml (×${packetCount})`,
+      frozenMilkEntryId: ids[0],
+    });
 
     return { ids, previewUrl, srcSetThumb, result };
   });
